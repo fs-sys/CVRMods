@@ -63,6 +63,12 @@
         <HintPath>$(ChilloutPath)\ChilloutVR_Data\Managed\UnityEngine.UI.dll</HintPath>
         <Private>False</Private>
       </Reference>
+      <Reference Include="UnityEngine.UnityWebRequestModule">
+        <HintPath>X:\SteamLibrary\steamapps\common\ChilloutVR\ChilloutVR_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.UnityWebRequestTextureModule">
+        <HintPath>X:\SteamLibrary\steamapps\common\ChilloutVR\ChilloutVR_Data\Managed\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using ABI_RC.Core.Player;
 using UnityEngine;
 using static UnityEngine.Mathf;
 
@@ -43,6 +44,17 @@ public static class Utils
 		"Developer" => "DEV",
 		_ => null
 	};
+
+	public static CVRPlayerEntity? GetPlayerEntity(string userID)
+	{
+		var player = CVRPlayerManager.Instance.NetworkPlayers.Find(p=> p.Uuid == userID);
+		if (player != null)
+		{
+			return player;
+		}
+		VRCPlates.Error("Could not find player entity for user ID: " + userID);
+		return null;
+	}
 }
 
 [Serializable]

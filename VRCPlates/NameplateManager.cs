@@ -3,6 +3,7 @@ using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
 using Dissonance;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using VRCPlates.MonoScripts;
 using Object = UnityEngine.Object;
@@ -12,12 +13,10 @@ namespace VRCPlates;
 public class NameplateManager
 {
     public readonly Dictionary<string, OldNameplate?> Nameplates;
-    private static Dictionary<string, Texture2D>? _cachedImage;
 
     public NameplateManager()
     {
         Nameplates = new Dictionary<string, OldNameplate?>();
-        _cachedImage = new Dictionary<string, Texture2D>();
     }
 
     private void AddNameplate(OldNameplate nameplate, PlayerDescriptor player)
@@ -36,19 +35,16 @@ public class NameplateManager
             Nameplates.Add(id, nameplate);
     }
 
-    public void RemoveNameplate(CVRPlayerEntity player)
+    public void RemoveNameplate(string player)
     {
-        string id;
-        try
+        if (Nameplates.ContainsKey(player))
         {
-            id = player.Uuid;
+            Nameplates.Remove(player);
         }
-        catch
+        else
         {
-            return;
+            VRCPlates.Error("NameplateManager: RemoveNameplate: Player not found: " + player);
         }
-
-        Nameplates.Remove(id);
     }
 
     public OldNameplate? GetNameplate(CVRPlayerEntity player)
@@ -165,91 +161,25 @@ public class NameplateManager
 
     internal static IEnumerator SetRawImage(string url, RawImage image)
     {
-        if (_cachedImage != null)
-        {
-            if (_cachedImage.TryGetValue(url, out var tex))
-            {
-                VRCPlates.Debug("Found Cached Image for: " + url);
-            }
-            else
-            {
-                //Dis Lily
-                var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0");
-
-                var req = http.GetByteArrayAsync(url);
-                while (!req.GetAwaiter().IsCompleted)
-                {
-                    yield return null;
-                }
-
-                if (!req.IsCanceled & !req.IsFaulted)
-                {
-                    var bytes = req.Result;
-                    try
-                    {
-                        //I do Dis
-                        VRCPlates.Debug($"Download Finished: {url}");
-                        tex = new Texture2D(2, 2)
-                        {
-                            hideFlags = HideFlags.DontUnloadUnusedAsset,
-                            wrapMode = TextureWrapMode.Clamp,
-                            filterMode = FilterMode.Trilinear
-                        };
-
-                        // ReSharper disable once InvokeAsExtensionMethod
-                        // Compiles incorrectly if called as an extension. Why? Who knows
-                        if (ImageConversion.LoadImage(tex, bytes))
-                        {
-                            VRCPlates.Debug("Loading Using LoadImage...");
-                        }
-                        else
-                        {
-                            VRCPlates.Debug("Loading using LoadRawTextureData...");
-                            tex.LoadRawTextureData(bytes);
-                        }
-
-                        _cachedImage.Add(url, tex);
-                    }
-                    catch (Exception e)
-                    {
-                        VRCPlates.Error(e.ToString());
-                    }
-                }
-                else
-                {
-                    VRCPlates.Error("Image Request Failed");
-                }
-
-                http.Dispose();
-            }
-
-            if (tex != null && tex.isReadable)
-            {
-                image.texture = tex;
-                if (Settings.ShowIcon != null) image.transform.parent.gameObject.SetActive(Settings.ShowIcon.Value);
-                VRCPlates.Debug("Applying Image");
-            }
-            else
-            {
-                VRCPlates.Error("Texture is Unreadable: " + url);
-                _cachedImage.Remove(url);
-                image.transform.parent.gameObject.SetActive(false);
-            }
-        }
-        else
-        {
-            VRCPlates.Error("Image Cache is Null");
-        }
+        using var uwr = UnityWebRequest.Get(url);
+        uwr.downloadHandler = new DownloadHandlerTexture();
+        yield return uwr.SendWebRequest();
+        yield return image.texture = DownloadHandlerTexture.GetContent(uwr);
+        if (Settings.ShowIcon != null)
+            image.transform.parent.gameObject.SetActive(Settings.ShowIcon.Value);
+        VRCPlates.Debug("Applying Image");
     }
-
+    
     public void CreateNameplate(PlayerDescriptor playerDescriptor)
     {
         var oldNameplate = playerDescriptor.GetComponentInChildren<PlayerNameplate>();
-        var position = oldNameplate.transform.position;
-        if (Settings.Offset != null && Settings.Scale != null && Settings.Enabled != null)
+
+        if (oldNameplate != null && oldNameplate.gameObject != null && oldNameplate.gameObject.transform != null)
         {
+
+            var position = oldNameplate.gameObject.transform.position;
+
+            if (Settings.Offset == null || Settings.Scale == null || Settings.Enabled == null) return;
             var scaleValue = Settings.Scale.Value * .001f;
             var offsetValue = Settings.Offset.Value;
 

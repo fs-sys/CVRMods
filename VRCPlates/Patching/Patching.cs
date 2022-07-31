@@ -21,14 +21,21 @@ internal static class Patching
         var _onRelations =
             typeof(Patching).GetMethod(nameof(OnRelations), BindingFlags.NonPublic | BindingFlags.Static);
 
+        var _PlayerJoin =
+            typeof(PlayerDescriptor).GetMethod("OnPlayerJoin", BindingFlags.NonPublic | BindingFlags.Static);
+        var _onPlayerJoin =
+            typeof(Patching).GetMethod(nameof(OnPlayerJoin), BindingFlags.NonPublic | BindingFlags.Static);
+
         var _AvatarInstantiated =
             typeof(PuppetMaster).GetMethod("AvatarInstantiated", BindingFlags.Public | BindingFlags.Instance);
         var _onAvatarInstantiated =
             typeof(Patching).GetMethod(nameof(OnAvatarInstantiated), BindingFlags.NonPublic | BindingFlags.Static);
 
-        var _ReloadAllNameplates = typeof(CVRPlayerManager).GetMethod("ReloadAllNameplates", BindingFlags.NonPublic | BindingFlags.Static);
-        var _onReloadAllNameplates = typeof(Patching).GetMethod(nameof(OnReloadAllNameplates), BindingFlags.NonPublic | BindingFlags.Static);
-        
+        var _ReloadAllNameplates =
+            typeof(CVRPlayerManager).GetMethod("ReloadAllNameplates", BindingFlags.Public | BindingFlags.Instance);
+        var _onReloadAllNameplates =
+            typeof(Patching).GetMethod(nameof(OnReloadAllNameplates), BindingFlags.NonPublic | BindingFlags.Static);
+
         if (_HandleRelations != null && _onRelations != null)
         {
             _instance.Patch(_HandleRelations, null, new HarmonyMethod(_onRelations));
@@ -123,6 +130,11 @@ internal static class Patching
         {
             VRCPlates.Error("Failed to get player descriptor for avatar " + __instance.name);
         }
+    }
+    
+    private static void OnPlayerJoin(PlayerDescriptor __instance)
+    {
+        if (VRCPlates.NameplateManager != null) VRCPlates.NameplateManager.CreateNameplate(__instance);
     }
     
     private static void OnReloadAllNameplates()

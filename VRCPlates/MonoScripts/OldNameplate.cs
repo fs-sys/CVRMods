@@ -6,13 +6,11 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.UI;
-using VRCPlates.MonoScripts;
 using VRCPlates.Reflection;
 using static VRCPlates.AssetManager;
 
 namespace VRCPlates.MonoScripts;
 
-[RegisterTypeInIl2Cpp]
 public class OldNameplate : MonoBehaviour
 {
     public CVRPlayerEntity? Player;
@@ -209,7 +207,7 @@ public class OldNameplate : MonoBehaviour
             _profilePicture = value;
             if (string.IsNullOrEmpty(_profilePicture)) return;
             if (_profilePicture != null && _userIcon != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_profilePicture, _userIcon));
+                NameplateManager.SetRawImage(_profilePicture, _userIcon);
         }
     }
 
@@ -224,11 +222,11 @@ public class OldNameplate : MonoBehaviour
             if (_plateBackground == null)
                 return;
             if (_mainBackground != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_plateBackground, _mainBackground));
+                NameplateManager.SetRawImage(_plateBackground, _mainBackground);
             if (_afkBackground != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_plateBackground, _afkBackground));
+                NameplateManager.SetRawImage(_plateBackground, _afkBackground);
             if (_vipBackground != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_plateBackground, _vipBackground));
+                NameplateManager.SetRawImage(_plateBackground, _vipBackground);
         }
     }
 
@@ -297,13 +295,25 @@ public class OldNameplate : MonoBehaviour
         _rankText = Nameplate.transform.Find("Rank").GetComponent<Text>();
 
         if (VRCPlates.NameplateManager != null)
-            NameplateManager.InitializePlate(this,
-                Nameplate.GetComponentInParent<CVRPlayerEntity>());
-
-        MelonCoroutines.Start(SpeechManagement());
-        MelonCoroutines.Start(Rainbow());
-
-        ApplySettings();
+        {
+            var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
+            if (descriptor != null)
+            {
+                var player = Utils.GetPlayerEntity(descriptor.ownerId);
+                if (player == null)
+                {
+                    VRCPlates.NameplateManager.RemoveNameplate(descriptor.ownerId);
+                    Destroy(Nameplate);
+                    return;
+                }
+                NameplateManager.InitializePlate(this, player);
+                    
+                MelonCoroutines.Start(SpeechManagement());
+                MelonCoroutines.Start(Rainbow());
+                    
+                ApplySettings();
+            }
+        }
     }
     
     
