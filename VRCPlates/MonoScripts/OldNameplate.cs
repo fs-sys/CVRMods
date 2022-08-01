@@ -413,19 +413,7 @@ public class OldNameplate : MonoBehaviour
     {
         transform.LookAt(2f * transform.position - _camera!.transform.position);
     }
-    
-   
-    public void ApplySettings(Vector3 position, float scaleValue, float offsetValue)
-    {
-        if (_transform != null)
-        {
-            _transform.position = new(position.x, position.y + offsetValue, position.z);
-            _transform.localScale = new(scaleValue, scaleValue, scaleValue);
-        }
-        ApplySettings();
-    }
 
-   
     public void ApplySettings()
     {
         try
@@ -433,6 +421,22 @@ public class OldNameplate : MonoBehaviour
             if (Player == null)
             {
                 if (Nameplate != null) Player = Nameplate.GetComponentInParent<CVRPlayerEntity>();
+            }
+
+            if (Settings.Scale != null)
+            {
+                var scaleValue = Settings.Scale.Value * .001f;
+                if (_transform != null) _transform.localScale = new Vector3(scaleValue, scaleValue, scaleValue);
+            }
+            
+            if (Settings.Offset != null)
+            {
+                var offsetValue = Settings.Offset.Value * .001f;
+                var pos = Player?.PuppetMaster.GetNamePlatePosition(offsetValue);
+                if (pos != null && _transform != null)
+                {
+                    _transform.position = pos.Value;
+                }
             }
 
             if (Settings.ModernMovement is {Value: true})

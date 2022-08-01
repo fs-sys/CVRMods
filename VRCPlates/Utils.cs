@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using ABI_RC.Core.Player;
@@ -148,54 +149,48 @@ public struct HsbColor
 		var value = hsbColor.b;
 		var value2 = hsbColor.b;
 		var value3 = hsbColor.b;
-		if (hsbColor.s != 0f)
+		if (hsbColor.s == 0f) return new Color(Clamp01(value), Clamp01(value2), Clamp01(value3), hsbColor.a);
+		var num = hsbColor.b;
+		var num2 = hsbColor.b * hsbColor.s;
+		var num3 = hsbColor.b - num2;
+		var num4 = hsbColor.h * 360f;
+		switch (num4)
 		{
-			var num = hsbColor.b;
-			var num2 = hsbColor.b * hsbColor.s;
-			var num3 = hsbColor.b - num2;
-			var num4 = hsbColor.h * 360f;
-			if (num4 < 60f)
-			{
+			case < 60f:
 				value = num;
 				value2 = num4 * num2 / 60f + num3;
 				value3 = num3;
-			}
-			else if (num4 < 120f)
-			{
+				break;
+			case < 120f:
 				value = (0f - (num4 - 120f)) * num2 / 60f + num3;
 				value2 = num;
 				value3 = num3;
-			}
-			else if (num4 < 180f)
-			{
+				break;
+			case < 180f:
 				value = num3;
 				value2 = num;
 				value3 = (num4 - 120f) * num2 / 60f + num3;
-			}
-			else if (num4 < 240f)
-			{
+				break;
+			case < 240f:
 				value = num3;
 				value2 = (0f - (num4 - 240f)) * num2 / 60f + num3;
 				value3 = num;
-			}
-			else if (num4 < 300f)
-			{
+				break;
+			case < 300f:
 				value = (num4 - 240f) * num2 / 60f + num3;
 				value2 = num3;
 				value3 = num;
-			}
-			else if (num4 <= 360f)
-			{
+				break;
+			case <= 360f:
 				value = num;
 				value2 = num3;
 				value3 = (0f - (num4 - 360f)) * num2 / 60f + num3;
-			}
-			else
-			{
+				break;
+			default:
 				value = 0f;
 				value2 = 0f;
 				value3 = 0f;
-			}
+				break;
 		}
 
 		return new Color(Clamp01(value), Clamp01(value2), Clamp01(value3), hsbColor.a);

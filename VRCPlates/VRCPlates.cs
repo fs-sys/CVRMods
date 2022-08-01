@@ -4,7 +4,7 @@ using MelonLoader;
 using UnityEngine;
 using VRCPlates.Compatibility;
 
-[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.0", ".FS.#8519")]
+[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.1", ".FS.#8519")]
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
 namespace VRCPlates;
 

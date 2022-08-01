@@ -211,7 +211,7 @@ public class NameplateManager
                                 {
                                     if (nameplate != null)
                                     {
-                                        nameplate.ApplySettings(position, scaleValue, offsetValue);
+                                        nameplate.ApplySettings();
                                     }
                                     else
                                     {
