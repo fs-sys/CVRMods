@@ -1,8 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Savior;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.UI;
@@ -19,9 +19,11 @@ public class OldNameplate : MonoBehaviour
     
     private bool _isFriend;
     private bool _isMuted;
+    private bool _isHidden;
     private bool _isBlocked;
+    private bool _isLocal;
     private string? _vipRank;
-    
+
     private Color _plateColor;
     private Color _nameColor;
     private string? _name;
@@ -37,12 +39,11 @@ public class OldNameplate : MonoBehaviour
 
     private Image? _mainPlate;
     private Text? _mainText;
-    private Text? _mainStatus;
     private RawImage? _mainBackground;
 
-    private Image? _afkPlate;
-    private Text? _afkText;
-    private RawImage? _afkBackground;
+    // private Image? _afkPlate;
+    // private Text? _afkText;
+    // private RawImage? _afkBackground;
 
     private Image? _userPlate;
     private RawImage? _userIcon;
@@ -52,22 +53,29 @@ public class OldNameplate : MonoBehaviour
     private RawImage? _vipBackground;
 
     private Image? _voiceBubble;
-    private Image? _voiceStatus;
     private Text? _voiceVolume;
 
-    private Image? _badgeMaster;
-    private Image? _badgeFallback;
-    private Image? _badgePerformance;
-    private Image? _badgeQuest;
+    private Image? _badgeHidden;
     public Image? badgeCompat;
 
     private Image? _iconFriend;
-    private Image? _iconInteract;
-
     private Text? _rankText;
+    
+    private bool _isVoiceBubbleNotNull;
+    private bool _isNameplateNotNull;
+    private bool _isMainPlateNotNull;
+    private bool _isVipPlateNotNull;
 
 
-    public bool IsLocal { get; set; }
+    public bool IsLocal
+    {
+        get => _isLocal;
+        set
+        {
+            _isLocal = value;
+            Nameplate!.SetActive(!_isLocal);
+        }
+    }
 
     public bool IsFriend
     {
@@ -118,7 +126,20 @@ public class OldNameplate : MonoBehaviour
             _voiceBubble.gameObject.SetActive(_isMuted);
         }
     }
-    
+
+    public bool IsHidden
+    {
+        get => _isHidden;
+        set
+        {
+            _isHidden = value;
+            if (_badgeHidden == null) return;
+            _badgeHidden.gameObject.SetActive(_isHidden);
+        }
+    }
+
+    public float UserVolume { get; set; }
+
     public string? VipRank
     {
         get => _vipRank;
@@ -145,7 +166,6 @@ public class OldNameplate : MonoBehaviour
 
             if (_mainPlate != null) _mainPlate.color = _plateColor;
                 if (_vipPlate != null) _vipPlate.color = _plateColor;
-                if (_afkPlate != null) _afkPlate.color = _plateColor;
                 if (_userPlate != null) _userPlate.color = _plateColor;
             
         }
@@ -199,6 +219,7 @@ public class OldNameplate : MonoBehaviour
         }
     }
     
+    [SuppressMessage("ReSharper", "IteratorMethodResultIsIgnored")]
     public string? ProfilePicture
     {
         get => _profilePicture;
@@ -207,7 +228,9 @@ public class OldNameplate : MonoBehaviour
             _profilePicture = value;
             if (string.IsNullOrEmpty(_profilePicture)) return;
             if (_profilePicture != null && _userIcon != null)
+            {
                 NameplateManager.SetRawImage(_profilePicture, _userIcon);
+            }
         }
     }
 
@@ -223,8 +246,6 @@ public class OldNameplate : MonoBehaviour
                 return;
             if (_mainBackground != null)
                 NameplateManager.SetRawImage(_plateBackground, _mainBackground);
-            if (_afkBackground != null)
-                NameplateManager.SetRawImage(_plateBackground, _afkBackground);
             if (_vipBackground != null)
                 NameplateManager.SetRawImage(_plateBackground, _vipBackground);
         }
@@ -264,12 +285,7 @@ public class OldNameplate : MonoBehaviour
 
         _mainPlate = Nameplate.transform.Find("Main/Plate").GetComponent<Image>();
         _mainText = Nameplate.transform.Find("Main/Name").GetComponent<Text>();
-        _mainStatus = Nameplate.transform.Find("Main/Status").GetComponent<Text>();
         _mainBackground = Nameplate.transform.Find("Main/Mask/Background").GetComponent<RawImage>();
-
-        _afkPlate = Nameplate.transform.Find("AFK/Plate").GetComponent<Image>();
-        _afkText = Nameplate.transform.Find("AFK/Text").GetComponent<Text>();
-        _afkBackground = Nameplate.transform.Find("AFK/Mask/Background").GetComponent<RawImage>();
 
         _userPlate = Nameplate.transform.Find("VIP/Icon").GetComponent<Image>();
         _userIcon = Nameplate.transform.Find("VIP/Icon/Image").GetComponent<RawImage>();
@@ -279,41 +295,39 @@ public class OldNameplate : MonoBehaviour
         _vipBackground = Nameplate.transform.Find("VIP/Plate/Text").GetComponent<RawImage>();
 
         _voiceBubble = Nameplate.transform.Find("Voice/Bubble").GetComponent<Image>();
-
-        _voiceStatus = Nameplate.transform.Find("Voice/Status").GetComponent<Image>();
         _voiceVolume = Nameplate.transform.Find("Voice/Volume").GetComponent<Text>();
 
-        _badgeMaster = Nameplate.transform.Find("Badges/Master").GetComponent<Image>();
-        _badgeFallback = Nameplate.transform.Find("Badges/Fallback").GetComponent<Image>();
-        _badgePerformance = Nameplate.transform.Find("Badges/Performance").GetComponent<Image>();
-        _badgeQuest = Nameplate.transform.Find("Badges/Quest").GetComponent<Image>();
+        _badgeHidden = Nameplate.transform.Find("Badges/Hidden").GetComponent<Image>();
         badgeCompat = Nameplate.transform.Find("Badges/Compat").GetComponent<Image>();
 
-        _iconFriend = Nameplate.transform.Find("Icons/Friend").GetComponent<Image>();
-        _iconInteract = Nameplate.transform.Find("Icons/Interact").GetComponent<Image>();
-
+        _iconFriend = Nameplate.transform.Find("FriendIcon").GetComponent<Image>();
+        
         _rankText = Nameplate.transform.Find("Rank").GetComponent<Text>();
 
-        if (VRCPlates.NameplateManager != null)
+        if (VRCPlates.NameplateManager == null) return;
+        
+        var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
+        if (descriptor == null) return;
+        
+        var player = Utils.GetPlayerEntity(descriptor.ownerId);
+        if (player == null)
         {
-            var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
-            if (descriptor != null)
-            {
-                var player = Utils.GetPlayerEntity(descriptor.ownerId);
-                if (player == null)
-                {
-                    VRCPlates.NameplateManager.RemoveNameplate(descriptor.ownerId);
-                    Destroy(Nameplate);
-                    return;
-                }
-                NameplateManager.InitializePlate(this, player);
-                    
-                MelonCoroutines.Start(SpeechManagement());
-                MelonCoroutines.Start(Rainbow());
-                    
-                ApplySettings();
-            }
+            VRCPlates.NameplateManager.RemoveNameplate(descriptor.ownerId);
+            Destroy(Nameplate);
+            return;
         }
+        
+        _isNameplateNotNull = Nameplate != null;
+        _isVoiceBubbleNotNull = _voiceBubble != null;
+        _isVipPlateNotNull = _vipPlate != null;
+        _isMainPlateNotNull = _mainPlate != null;
+
+        NameplateManager.InitializePlate(this, player);
+                    
+        StartCoroutine(SpeechManagement());
+        StartCoroutine(Rainbow());
+                    
+        ApplySettings();
     }
     
     
@@ -321,28 +335,23 @@ public class OldNameplate : MonoBehaviour
     {
         while (true)
         {
-            if (Nameplate != null && Nameplate.activeInHierarchy && Player != null && SpriteDict != null)
+            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && Player != null && SpriteDict != null)
             {
                 if (Player.TalkerAmplitude > 0f)
                 {
-                    if (_voiceBubble != null && !_voiceBubble.gameObject.activeInHierarchy)
+                    if (_isVoiceBubbleNotNull && !_voiceBubble!.gameObject.activeInHierarchy)
                     {
                         if (Settings.ShowVoiceBubble != null)
                         {
                             _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value);
                         }
 
-                        if (_mainPlate != null && _mainPlate.gameObject.activeInHierarchy)
+                        if (_isMainPlateNotNull && _mainPlate!.gameObject.activeInHierarchy)
                         {
                             _mainPlate.sprite = SpriteDict["nameplatetalk"];
                         }
 
-                        if (_afkPlate != null && _afkPlate.gameObject.activeInHierarchy)
-                        {
-                            _afkPlate.sprite = SpriteDict["nameplatetalk"];
-                        }
-
-                        if (_vipPlate != null && _vipPlate.gameObject.activeInHierarchy)
+                        if (_isVipPlateNotNull && _vipPlate!.gameObject.activeInHierarchy)
                         {
                             _vipPlate.sprite = SpriteDict["nameplatetalk"];
                         }
@@ -350,21 +359,16 @@ public class OldNameplate : MonoBehaviour
                 }
                 else
                 {
-                    if (_voiceBubble != null)
+                    if (_isVoiceBubbleNotNull)
                     {
-                        _voiceBubble.gameObject.SetActive(IsMuted);
+                        _voiceBubble!.gameObject.SetActive(IsMuted);
 
-                        if (_mainPlate != null && _mainPlate.gameObject.activeInHierarchy)
+                        if (_isMainPlateNotNull && _mainPlate!.gameObject.activeInHierarchy)
                         {
                             _mainPlate.sprite = SpriteDict["nameplate"];
                         }
-
-                        if (_afkPlate != null && _afkPlate.gameObject.activeInHierarchy)
-                        {
-                            _afkPlate.sprite = SpriteDict["nameplate"];
-                        }
-
-                        if (_vipPlate != null && _vipPlate.gameObject.activeInHierarchy)
+                        
+                        if (_isVipPlateNotNull && _vipPlate!.gameObject.activeInHierarchy)
                         {
                             _vipPlate.sprite = SpriteDict["nameplate"];
                         }
@@ -382,17 +386,12 @@ public class OldNameplate : MonoBehaviour
         while (true)
         {
             if (Settings.RainbowFriends != null && Settings.RainbowPlates != null &&
-                Settings.RainbowPlates.Value | (Settings.RainbowFriends.Value && IsFriend) && Nameplate != null &&
-                Nameplate.activeInHierarchy && Player != null)
+                Settings.RainbowPlates.Value | (Settings.RainbowFriends.Value && IsFriend) && _isNameplateNotNull &&
+                Nameplate!.activeInHierarchy && Player != null)
             {
                 if (_mainPlate != null && _mainPlate.gameObject.activeInHierarchy)
                 {
                     _mainPlate.color = Color.Lerp(_mainPlate.color, Color.red, Time.deltaTime * 2);
-                }
-
-                if (_afkPlate != null && _afkPlate.gameObject.activeInHierarchy)
-                {
-                    _afkPlate.color = Color.Lerp(_afkPlate.color, Color.red, Time.deltaTime * 2);
                 }
 
                 if (_vipPlate != null && _vipPlate.gameObject.activeInHierarchy)
@@ -441,12 +440,12 @@ public class OldNameplate : MonoBehaviour
                 if (_constraint == null)
                 {
                     _constraint = Nameplate!.AddComponent<PositionConstraint>();
-                    VRCPlates.Error("Constraint is null, forcefully adding it.");
+                    VRCPlates.Error("[0000] Constraint is null, forcefully adding it.");
                 }
                 
                 if (_constraint.sourceCount > 1)
                 {
-                    VRCPlates.Error("Constraint.sourceCount is greater than 1, resetting...");
+                    VRCPlates.Error("[0001] Constraint.sourceCount is greater than 1, resetting...");
                     _constraint.SetSources(null);
                 }
 
@@ -454,7 +453,7 @@ public class OldNameplate : MonoBehaviour
                 {
                     if (_constraint.GetSource(0).sourceTransform == null)
                     {
-                        VRCPlates.Debug("Removing Null Constraint Source");
+                        VRCPlates.Debug("[0002] Removing Null Constraint Source");
                         _constraint.RemoveSource(0);
                     }
                 }
@@ -574,7 +573,7 @@ public class OldNameplate : MonoBehaviour
         }
         catch (Exception e)
         {
-            VRCPlates.Error("Unable to Apply Nameplate Settings: " + e);
+            VRCPlates.Error("[0003] Unable to Apply Nameplate Settings: " + e);
         }
     }
     

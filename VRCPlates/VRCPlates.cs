@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using MelonLoader;
 using UnityEngine;
 using VRCPlates.Compatibility;
@@ -41,10 +42,7 @@ public class VRCPlates : MelonMod
     {
         if (NameplateManager?.Nameplates == null) return;
         if (NameplateManager.Nameplates.Count <= 0) return;
-        foreach (var plate in NameplateManager.Nameplates)
-        {
-            NameplateManager.Nameplates.Remove(plate.Key);
-        }
+        NameplateManager.Nameplates.Clear();
     }
 
     public override void OnPreferencesSaved()

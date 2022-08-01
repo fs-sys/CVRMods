@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using MelonLoader;
 using UnityEngine;
@@ -17,7 +20,7 @@ internal static class AssetManager
     {
         if (_bundle is null)
         {
-            VRCPlates.Error($"Failed to load Prefab: {@object}");
+            VRCPlates.Error($"[0011]Failed to load Prefab: {@object}");
             throw new FileLoadException();
         }
         var go = _bundle.LoadAsset(@object, typeof(GameObject)) as GameObject;
@@ -29,7 +32,7 @@ internal static class AssetManager
             return go;
         }
 
-        VRCPlates.Error("Failed to load Prefab: " + @object);
+        VRCPlates.Error("[0012]Failed to load Prefab: " + @object);
         return new GameObject();
     }
 
@@ -37,7 +40,7 @@ internal static class AssetManager
     {
         if (_bundle is null)
         {
-            VRCPlates.Error($"Failed to load Sprite: {sprite}");
+            VRCPlates.Error($"[0013] Failed to load Sprite: {sprite}");
             throw new FileLoadException();
         }
         var sprite2 = _bundle.LoadAsset(sprite, typeof(Sprite)) as Sprite;
@@ -49,13 +52,13 @@ internal static class AssetManager
             return sprite2;
         }
         
-        VRCPlates.Error("Failed to load Sprite: " + sprite);
+        VRCPlates.Error("[0014] Failed to load Sprite: " + sprite);
         return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
     }
 
     private static IEnumerator LoadResources()
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VRCPlates.Resources.classicplates");
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VRCPlates.Resources.vrcplates");
         if (stream != null)
         {
             using var memoryStream = new MemoryStream((int) stream.Length);
@@ -72,14 +75,13 @@ internal static class AssetManager
                 SpriteDict?.Add("bubblemute", LoadSprite("bubble_mute.png"));
 
                 SpriteDict?.Add("ear", LoadSprite("ear.png"));
-                SpriteDict?.Add("earmute", LoadSprite("ear_mute.png"));
 
                 SpriteDict?.Add("defaulticon", LoadSprite("icon_default.png"));
                 SpriteDict?.Add("iconborder", LoadSprite("IconBorder.png"));
                 SpriteDict?.Add("friend", LoadSprite("friend_icon.png"));
-                SpriteDict?.Add("quest", LoadSprite("quest.png"));
-                SpriteDict?.Add("crown", LoadSprite("crown.png"));
-
+                
+                SpriteDict?.Add("hidden", LoadSprite("Hidden.png"));
+                
                 SpriteDict?.Add("nameplate", LoadSprite("NameplateSilent.png"));
                 SpriteDict?.Add("nameplatetalk", LoadSprite("NameplateTalk.png"));
                 SpriteDict?.Add("nameplatemask", LoadSprite("NameplateMask.png"));
@@ -89,12 +91,12 @@ internal static class AssetManager
             }
             catch (Exception e)
             {
-                VRCPlates.Error($"Nameplate Assets failed to load\n\n{e}");
+                VRCPlates.Error($"[0015] Nameplate Assets failed to load\n\n{e}");
             }
         }
         else
         {
-            VRCPlates.Error("Stream is null, Nameplates cannot load");
+            VRCPlates.Error("[0016] Stream is null, Nameplates cannot load");
         }
 
         yield break;

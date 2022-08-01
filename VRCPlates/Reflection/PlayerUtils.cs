@@ -22,7 +22,7 @@ public static class PlayerUtils
             return (PlayerDescriptor) PlayerDescriptorField.GetValue(puppetMaster);
         }
 
-        VRCPlates.Error("GetAnimator: PuppetMaster._playerDescriptor is null");
+        VRCPlates.Error("[0009] GetAnimator: PuppetMaster._playerDescriptor is null");
         return null;
     }
 
@@ -33,7 +33,7 @@ public static class PlayerUtils
             return (Animator) AnimatorField.GetValue(puppetMaster);
         }
 
-        VRCPlates.Error("GetAnimator: PuppetMaster._animator is null");
+        VRCPlates.Error("[0010] GetAnimator: PuppetMaster._animator is null");
         return null;
     }
 }

@@ -13,9 +13,10 @@
 
     <ItemGroup>
         <None Remove="Resources\classicplates" />
-        <EmbeddedResource Include="Resources\classicplates" />
         <EmbeddedResource Remove="Properties\**" />
         <None Remove="Properties\**" />
+        <None Remove="Resources\vrcplates" />
+        <EmbeddedResource Include="Resources\vrcplates" />
     </ItemGroup>
 
     <ItemGroup>

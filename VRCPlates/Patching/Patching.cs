@@ -4,6 +4,7 @@ using System.Reflection;
 using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Player;
 using HarmonyLib;
+using MelonLoader;
 using VRCPlates.Reflection;
 
 namespace VRCPlates.Patching;
@@ -22,7 +23,7 @@ internal static class Patching
             typeof(Patching).GetMethod(nameof(OnRelations), BindingFlags.NonPublic | BindingFlags.Static);
 
         var _PlayerJoin =
-            typeof(PlayerDescriptor).GetMethod("OnPlayerJoin", BindingFlags.NonPublic | BindingFlags.Static);
+            AccessTools.Constructor(typeof(PlayerDescriptor));
         var _onPlayerJoin =
             typeof(Patching).GetMethod(nameof(OnPlayerJoin), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -42,16 +43,25 @@ internal static class Patching
         }
         else
         {
-            VRCPlates.Error("Failed to patch HandleRelations");
+            VRCPlates.Error("[0004] Failed to patch HandleRelations");
         }
 
+        if (_PlayerJoin != null && _onPlayerJoin != null)
+        {
+            _instance.Patch(_PlayerJoin, null, new HarmonyMethod(_onPlayerJoin));
+        }
+        else
+        {
+            VRCPlates.Error("[0005] Failed to patch PlayerJoin");
+        }
+        
         if (_AvatarInstantiated != null && _onAvatarInstantiated != null)
         {
             _instance.Patch(_AvatarInstantiated, null, new HarmonyMethod(_onAvatarInstantiated));
         }
         else
         {
-            VRCPlates.Error("Failed to patch AvatarInstantiated");
+            VRCPlates.Error("[0006] Failed to patch AvatarInstantiated");
         }
 
         if (_ReloadAllNameplates != null && _onReloadAllNameplates != null)
@@ -60,7 +70,7 @@ internal static class Patching
         }
         else
         {
-            VRCPlates.Error("Failed to patch ReloadAllNameplates");
+            VRCPlates.Error("[0007] Failed to patch ReloadAllNameplates");
         }
     }
 
@@ -124,17 +134,17 @@ internal static class Patching
         var descriptor = __instance.GetPlayerDescriptor();
         if (descriptor != null)
         {
-            if (VRCPlates.NameplateManager != null) VRCPlates.NameplateManager.CreateNameplate(descriptor); 
+            if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(descriptor)); 
         }
         else
         {
-            VRCPlates.Error("Failed to get player descriptor for avatar " + __instance.name);
+            VRCPlates.Error("[0008] Failed to get player descriptor for avatar " + __instance.name);
         }
     }
     
     private static void OnPlayerJoin(PlayerDescriptor __instance)
     {
-        if (VRCPlates.NameplateManager != null) VRCPlates.NameplateManager.CreateNameplate(__instance);
+        if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(__instance));
     }
     
     private static void OnReloadAllNameplates()
