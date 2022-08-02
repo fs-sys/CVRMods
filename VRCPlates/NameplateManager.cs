@@ -100,16 +100,18 @@ public class NameplateManager
         return badge;
     }
 
-    public static void InitializePlate(OldNameplate oldNameplate, CVRPlayerEntity? player)
+    public static void InitializePlate(OldNameplate oldNameplate, PlayerDescriptor? playerDescriptor)
     {
         try
         {
-            if (player != null)
+            if (playerDescriptor != null)
             {
-                oldNameplate.Player = player;
+                oldNameplate.Player = Utils.GetPlayerEntity(playerDescriptor.ownerId);
 
                 if (oldNameplate.Player != null)
                 {
+                    var player = oldNameplate.Player;
+                    
                     oldNameplate.Name = player.Username;
 
                     // oldNameplate.Status = player.field_Private_APIUser_0.statusDescriptionDisplayString;

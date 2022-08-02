@@ -6,34 +6,16 @@ namespace VRCPlates.Reflection;
 
 public static class PlayerUtils
 {
-    private static readonly FieldInfo? AnimatorField;
-    private static readonly FieldInfo? PlayerDescriptorField;
+    private static readonly FieldInfo AnimatorField = typeof(PuppetMaster).GetField("_animator", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    private static readonly FieldInfo PlayerDescriptorField = typeof(PuppetMaster).GetField("_playerDescriptor", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-    static PlayerUtils()
+    public static PlayerDescriptor GetPlayerDescriptor(this PuppetMaster puppetMaster)
     {
-        PlayerDescriptorField = typeof(PuppetMaster).GetField("_playerDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
-        AnimatorField = typeof(PuppetMaster).GetField("_animator", BindingFlags.Instance | BindingFlags.NonPublic);
+        return (PlayerDescriptor) PlayerDescriptorField.GetValue(puppetMaster);
     }
 
-    public static PlayerDescriptor? GetPlayerDescriptor(this PuppetMaster puppetMaster)
+    public static Animator GetAnimator(this PuppetMaster puppetMaster)
     {
-        if (PlayerDescriptorField != null)
-        {
-            return (PlayerDescriptor) PlayerDescriptorField.GetValue(puppetMaster);
-        }
-
-        VRCPlates.Error("[0009] GetAnimator: PuppetMaster._playerDescriptor is null");
-        return null;
-    }
-
-    public static Animator? GetAnimator(this PuppetMaster puppetMaster)
-    {
-        if (AnimatorField != null)
-        {
-            return (Animator) AnimatorField.GetValue(puppetMaster);
-        }
-
-        VRCPlates.Error("[0010] GetAnimator: PuppetMaster._animator is null");
-        return null;
+        return (Animator) AnimatorField.GetValue(puppetMaster);
     }
 }

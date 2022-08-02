@@ -30,12 +30,12 @@ public static class Utils
 	public static Color GetColorForSocialRank(string playerApiUserRank) =>
 		playerApiUserRank switch
 		{
-			"User" => new Color32(0, 183, 36, 50),
-			"Legend" => new Color32(50, 150, 147, 50),
-			"Community Guide" => new Color32(221, 90, 0, 50),
-			"Moderator" => new Color32(221, 0, 118, 50),
-			"Developer" => new Color32(240, 0, 40, 50),
-			_ => new Color32(0, 183, 36, 50)
+			"User" => new Color32(0, 183, 36, 255),
+			"Legend" => new Color32(50, 150, 147, 255),
+			"Community Guide" => new Color32(221, 90, 0, 255),
+			"Moderator" => new Color32(221, 0, 118, 255),
+			"Developer" => new Color32(240, 0, 40, 255),
+			_ => new Color32(0, 183, 36, 255)
 		};
 
 	public static string? GetAbbreviation(string playerApiUserRank) => playerApiUserRank switch
@@ -46,7 +46,7 @@ public static class Utils
 		_ => null
 	};
 
-	public static CVRPlayerEntity? GetPlayerEntity(string userID)
+	public static CVRPlayerEntity? GetPlayerEntity(string? userID)
 	{
 		var player = CVRPlayerManager.Instance.NetworkPlayers.Find(p=> p.Uuid == userID);
 		if (player != null)

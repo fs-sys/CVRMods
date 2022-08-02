@@ -10,7 +10,7 @@ internal static class Settings
         Enabled = melonPreferencesCategory.CreateEntry("_enabled", true, "Enable Old Nameplates");
         ModernMovement = melonPreferencesCategory.CreateEntry("_modernMovement", true, "Enable Modern Nameplates Movement");
 
-        Offset = melonPreferencesCategory.CreateEntry("_offset", .3f, "Height Offset");
+        Offset = melonPreferencesCategory.CreateEntry("_offset", .35f, "Height Offset");
         Scale = melonPreferencesCategory.CreateEntry("_scale", 1f, "Plate Scale");
 
         PlateColor = melonPreferencesCategory.CreateEntry("_plateColor", "#00FF00", "Plate Color");
@@ -26,9 +26,9 @@ internal static class Settings
         ShowVoiceBubble = melonPreferencesCategory.CreateEntry("_showVoiceBubble", true, "Show Voice Bubble");
         ShowIcon = melonPreferencesCategory.CreateEntry("_showIcon", true, "Show User Icon");
 
-        RainbowPlates = melonPreferencesCategory.CreateEntry("_rainbowPlates", false, "owo","Hidden Rainbows~", true);
-        RainbowFriends = melonPreferencesCategory.CreateEntry("_rainbowFriends", false, "fren", "Fren only rainbows~", true);
-        RainbowDelay = melonPreferencesCategory.CreateEntry("_rainbowSpeed", .5f, "owodelay", "Delay between rainbow colors", true);
+        //RainbowPlates = melonPreferencesCategory.CreateEntry("_rainbowPlates", false, "owo","Hidden Rainbows~", true);
+        //RainbowFriends = melonPreferencesCategory.CreateEntry("_rainbowFriends", false, "fren", "Fren only rainbows~", true);
+        //RainbowDelay = melonPreferencesCategory.CreateEntry("_rainbowSpeed", .5f, "owodelay", "Delay between rainbow colors", true);
     }
 
 
@@ -51,7 +51,7 @@ internal static class Settings
     public static MelonPreferences_Entry<bool>? ShowVoiceBubble;
     public static MelonPreferences_Entry<bool>? ShowIcon;
 
-    public static MelonPreferences_Entry<bool>? RainbowPlates;
-    public static MelonPreferences_Entry<bool>? RainbowFriends;
-    public static MelonPreferences_Entry<float>? RainbowDelay;
+    //public static MelonPreferences_Entry<bool>? RainbowPlates;
+    //public static MelonPreferences_Entry<bool>? RainbowFriends;
+    //public static MelonPreferences_Entry<float>? RainbowDelay;
 }

@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ABI_RC.Core.InteractionSystem;
+using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
 using HarmonyLib;
 using MelonLoader;
@@ -17,6 +18,9 @@ internal static class Patching
     //Many patches are based on VRChat Utility Kit. Thank you Sleepers and loukylor.
     public static void Init()
     {
+        var _ReloadFriends = typeof(Friends).GetMethod("ReloadFriends", BindingFlags.Public | BindingFlags.Static);
+        var _onReloadFriends = typeof(Patching).GetMethod(nameof(OnReloadFriends), BindingFlags.NonPublic | BindingFlags.Static);
+
         var _HandleRelations =
             typeof(ViewManager).GetMethod("HandleRelations", BindingFlags.NonPublic | BindingFlags.Instance);
         var _onRelations =
@@ -54,7 +58,7 @@ internal static class Patching
         {
             VRCPlates.Error("[0005] Failed to patch PlayerJoin");
         }
-        
+
         if (_AvatarInstantiated != null && _onAvatarInstantiated != null)
         {
             _instance.Patch(_AvatarInstantiated, null, new HarmonyMethod(_onAvatarInstantiated));
@@ -72,6 +76,15 @@ internal static class Patching
         {
             VRCPlates.Error("[0007] Failed to patch ReloadAllNameplates");
         }
+        
+        if (_ReloadFriends != null && _onReloadFriends != null)
+        {
+            _instance.Patch(_ReloadFriends, null, new HarmonyMethod(_onReloadFriends));
+        }
+        else
+        {
+            VRCPlates.Error("[0008] Failed to patch ReloadFriends");
+        }
     }
 
     private static void OnRelations(ViewManager __instance, string __0, string __1)
@@ -80,12 +93,6 @@ internal static class Patching
         {
             case "Add":
             {
-                var nameplate = VRCPlates.NameplateManager?.GetNameplate(__0);
-                if (nameplate != null)
-                {
-                    nameplate.IsFriend = true;
-                }
-
                 return;
             }
             case "Deny":
@@ -154,6 +161,19 @@ internal static class Patching
         {
             VRCPlates.Debug("Reloading Nameplate: " + pair.Key);
             if (pair.Value != null) pair.Value.ApplySettings();
+        }
+    }
+    
+    private static void OnReloadFriends()
+    {
+        if (VRCPlates.NameplateManager == null) return;
+        foreach (var pair in VRCPlates.NameplateManager.Nameplates)
+        {
+            var nameplate = pair.Value;
+            if (nameplate != null)
+            {
+                nameplate.IsFriend = Friends.FriendsWith(pair.Key);
+            }
         }
     }
 }
