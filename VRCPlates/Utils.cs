@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
@@ -53,7 +54,7 @@ public static class Utils
 		{
 			return player;
 		}
-		VRCPlates.Error("[0027] Could not find player entity for user ID: " + userID);
+		VRCPlates.Error("Could not find player entity for user ID: " + userID + "\n" + new StackTrace());
 		return null;
 	}
 }
