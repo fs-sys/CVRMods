@@ -2,11 +2,15 @@
 ***I am not affiliated with ABI in any official capacity, these mods are not endorsed or outright permitted by ABI and are subject to scrutiny*** 
 > If you would like to learn more about the modding guidelines for ChilloutVR [Click Here](https://documentation.abinteractive.net/official/legal/tos/#7-modding-our-games)
 
-# Work In Progress  
+# Released Mods 
 ## VRCPlates (Classic Plates)
 A modification to bring the beloved nameplates of 2018 VRChat to ChilloutVR.
 
 ![Classic Nameplates](https://raw.githubusercontent.com/FSCodingWaifu/VRChatMods/main/classic_nameplate.png)
+
+## Disclaimer  
+> ***All assets within this mod were created from scratch with the core premise of recreating the original experience of VRChat. These assets are not owned or endorsed by VRChat.***
+> ***Furthermore, these nameplates operate under the guidelines set by the CEO of ABI for nameplate modification by prominently displaying staff***
 
 ### Features
 - Profile Pictures
@@ -19,6 +23,8 @@ A modification to bring the beloved nameplates of 2018 VRChat to ChilloutVR.
 ***Nameplates are seperate objects and will not impede on other mod features, you can disable or enable the nameplates live within the game to access incompatible features***
 > Directly editing your MelonPreferences.cfg file will not update the nameplates and cause issues.
 
+### Known Issues
+> There is an error thrown from method `NameplateManager.SetRawImage` for Error 404. This is due to Profile Pictures being broken on ABI's end and is the same error thrown for the normal nameplates as well
 
 ### Work in Progress
 - Badge instantiation 
