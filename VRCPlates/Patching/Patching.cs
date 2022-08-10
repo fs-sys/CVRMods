@@ -1,11 +1,11 @@
-﻿using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
+using DarkRift;
 using HarmonyLib;
 using MelonLoader;
 using VRCPlates.Reflection;
@@ -23,7 +23,7 @@ internal static class Patching
     // Thank you Bono for the the UserJoin Transpiler.
     public static void Init()
     {
-        var _ReloadFriends = typeof(Friends).GetMethod("ReloadFriends", BindingFlags.Public | BindingFlags.Static);
+        var _ReloadFriends = typeof(ViewManager).GetMethod("RequestFriendsListTask", BindingFlags.Public | BindingFlags.Instance);
         var _onReloadFriends =
             typeof(Patching).GetMethod(nameof(OnReloadFriends), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -36,7 +36,6 @@ internal static class Patching
             BindingFlags.Instance | BindingFlags.Public);
         var _onTryCreatePlayer =
             typeof(Patching).GetMethod(nameof(Transpiler), BindingFlags.NonPublic | BindingFlags.Static);
-        ;
 
         var _PlayerLeave = typeof(CVRPlayerEntity).GetMethod("Recycle", BindingFlags.Public | BindingFlags.Instance);
         var _onPlayerLeave =
@@ -133,8 +132,7 @@ internal static class Patching
             VRCPlates.Error("[1] Failed to patch TryCreatePlayer\n" + new StackTrace());
         }
     }
-
-
+    
     private static void OnRelations(ViewManager __instance, string __0, string __1)
     {
         switch (__1)
@@ -225,20 +223,16 @@ internal static class Patching
         }
     }
     
-    private static void OnReloadFriends()
+    private static void OnReloadFriends(ViewManager __instance)
     {
         if (VRCPlates.NameplateManager == null) return;
-        foreach (var pair in VRCPlates.NameplateManager.Nameplates)
+        foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Select(pair => pair.Value).Where(nameplate => nameplate != null))
         {
-            var nameplate = pair.Value;
-            if (nameplate != null)
-            {
-                nameplate.IsFriend = Friends.FriendsWith(pair.Key);
-            }
+            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player?.Uuid);
         }
     }
 
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
         var code = new CodeMatcher(instructions)
             .MatchForward(true, new CodeMatch(OpCodes.Callvirt, _targetMethod))

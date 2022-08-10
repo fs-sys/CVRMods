@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Savior;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.UI;
@@ -146,7 +146,8 @@ public class OldNameplate : MonoBehaviour
         set
         {
             _vipRank = value;
-            if (_vipPlate != null) _vipPlate.transform.parent.gameObject.SetActive(_vipRank != string.Empty);
+            if (_vipText != null) _vipText.text = _vipRank;
+            if (_vipPlate != null) _vipPlate.transform.parent.gameObject.SetActive(_vipRank != null);
         }
     }
 
@@ -227,10 +228,8 @@ public class OldNameplate : MonoBehaviour
         {
             _profilePicture = value;
             if (string.IsNullOrEmpty(_profilePicture)) return;
-            if (_profilePicture != null && _userIcon != null)
-            {
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_profilePicture, _userIcon));
-            }
+            if (_profilePicture is null or "https://files.abidata.io/user_images/00default.png" || _userIcon == null) return;
+            NameplateManager.ImageQueue?.Add(_profilePicture, _userIcon);
         }
     }
 
@@ -245,25 +244,12 @@ public class OldNameplate : MonoBehaviour
             if (_plateBackground == null)
                 return;
             if (_mainBackground != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_plateBackground, _mainBackground));
+                NameplateManager.ImageQueue?.Add(_plateBackground, _mainBackground);
             if (_vipBackground != null)
-                MelonCoroutines.Start(NameplateManager.SetRawImage(_plateBackground, _vipBackground));
+                NameplateManager.ImageQueue?.Add(_plateBackground, _vipBackground);
         }
     }
-
-    public string? VipText
-    {
-        get => _vipRank;
-        set
-        {
-            if (value == null) return;
-            _vipRank = value;
-            if (_vipText == null) return;
-            _vipText.text = _vipRank;
-            if (_vipPlate != null) _vipPlate.gameObject.SetActive(true);
-        }
-    }
-
+    
     public bool IsBlocked
     {
         get => _isBlocked;
@@ -325,11 +311,11 @@ public class OldNameplate : MonoBehaviour
         NameplateManager.InitializePlate(this, descriptor);
                     
         StartCoroutine(SpeechManagement());
+        StartCoroutine(PlateManagement());
         
         ApplySettings();
     }
-    
-    
+
     private IEnumerator SpeechManagement()
     {
         while (true)
@@ -376,6 +362,20 @@ public class OldNameplate : MonoBehaviour
             }
 
             yield return new WaitForSeconds(.5f);
+        }
+        // ReSharper disable once IteratorNeverReturns
+    }
+
+    private IEnumerator PlateManagement()
+    {
+        while (true)
+        {
+            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && Player != null)
+            {
+                IsFriend = Friends.FriendsWith(Player.Uuid);
+            }
+
+            yield return new WaitForSeconds(3f);
         }
         // ReSharper disable once IteratorNeverReturns
     }

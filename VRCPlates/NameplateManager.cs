@@ -3,6 +3,7 @@ using System.Diagnostics;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
 using Dissonance;
+using MelonLoader;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -14,10 +15,58 @@ namespace VRCPlates;
 public class NameplateManager
 {
     public readonly Dictionary<string, OldNameplate?> Nameplates;
+    public static Dictionary<string, RawImage>? ImageQueue;
 
     public NameplateManager()
     {
         Nameplates = new Dictionary<string, OldNameplate?>();
+        ImageQueue = new Dictionary<string, RawImage>();
+
+        MelonCoroutines.Start(ImageRequestLoop());
+    }
+
+    private static IEnumerator ImageRequestLoop()
+    {
+        while (true)
+        {
+            var rateLimit = Settings.RateLimit == null ? 1f : Settings.RateLimit.Value;
+            if (ImageQueue is {Count: > 0})
+            {
+                var pair = ImageQueue.First();
+                if (pair.Key is not null or "" or "https://files.abidata.io/user_images/00default.png")
+                {
+                    using var uwr = UnityWebRequest.Get(pair.Key);
+                    uwr.downloadHandler = new DownloadHandlerTexture();
+
+                    var request = uwr.SendWebRequest();
+                    while (!request.isDone)
+                    {
+                        yield return null;
+                    }
+
+                    if (uwr.isNetworkError || uwr.isHttpError)
+                    {
+                        VRCPlates.Warning("Unable to set profile picture: " + uwr.error + "\n" + new StackTrace());
+                        ImageQueue.Remove(pair.Key);
+                    }
+                    else
+                    {
+                        pair.Value.texture = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
+                        pair.Value.transform.parent.gameObject.SetActive(true);
+                    }
+                    uwr.Dispose();
+                }
+                else
+                {
+                    pair.Value.transform.parent.gameObject.SetActive(false);
+                }
+
+                if (pair.Key != null) ImageQueue.Remove(pair.Key);
+            }
+
+            yield return new WaitForSeconds(rateLimit);
+        }
+        // ReSharper disable once IteratorNeverReturns
     }
 
     private void AddNameplate(OldNameplate nameplate, CVRPlayerEntity player)
@@ -117,6 +166,8 @@ public class NameplateManager
 
                     oldNameplate.Rank = player.ApiUserRank;
 
+                    oldNameplate.VipRank = Utils.GetAbbreviation(player.ApiUserRank);
+                    
                     // Literally broken no matter what I try.
                     //oldNameplate.ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
 
@@ -136,8 +187,6 @@ public class NameplateManager
                     // oldNameplate.IsQuest = player.field_Private_APIUser_0._last_platform.ToLower() == "android";
                     
                     oldNameplate.IsMuted = player.PlayerDescriptor.voiceMuted;
-
-                    oldNameplate.VipText = Utils.GetAbbreviation(player.ApiUserRank);
 
                     oldNameplate.IsLocal = player.DarkRift2Player.Type == NetworkPlayerType.Local;
                 }
@@ -160,121 +209,89 @@ public class NameplateManager
         }
     }
 
-    internal static IEnumerator SetRawImage(string url, RawImage image)
-    {
-        if (url is null or "" or "https://files.abidata.io/user_images/00default.png")
-        {
-            image.transform.parent.gameObject.SetActive(false);
-            yield break;
-        }
-        using var uwr = UnityWebRequest.Get(url);
-        uwr.downloadHandler = new DownloadHandlerTexture();
-        var request = uwr.SendWebRequest();
-        while (!request.isDone)
-        {
-            yield return null;
-        }
-        if (uwr.isNetworkError || uwr.isHttpError)
-        {
-            VRCPlates.Error("Unable to set profile picture: " + uwr.error + "\n" + new StackTrace());
-        }
-        else
-        {
-            image.texture = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
-            image.transform.parent.gameObject.SetActive(true);
-        }
-    }
-
     public IEnumerator CreateNameplate(CVRPlayerEntity playerEntity)
     {
         yield return new WaitForSeconds(0.25f);
 
         var oldNameplate = playerEntity.PlayerNameplate;
-        if (oldNameplate != null)
+        if (oldNameplate == null) yield break;
+        if (oldNameplate.gameObject != null)
         {
-            if (oldNameplate.gameObject != null)
+            if (oldNameplate.gameObject.transform != null)
             {
-                if (oldNameplate.gameObject.transform != null)
+                var position = oldNameplate.gameObject.transform.position;
+
+                if (Settings.Offset != null && Settings.Scale != null && Settings.Enabled != null)
                 {
-                    var position = oldNameplate.gameObject.transform.position;
-
-                    if (Settings.Offset != null && Settings.Scale != null && Settings.Enabled != null)
+                    var scaleValue = Settings.Scale.Value * .001f;
+                    var offsetValue = Settings.Offset.Value;
+                    var id = playerEntity.Uuid;
+                    if (id is {Length: > 0})
                     {
-                        var scaleValue = Settings.Scale.Value * .001f;
-                        var offsetValue = Settings.Offset.Value;
-                        var id = playerEntity.Uuid;
-                        if (id is {Length: > 0})
+                        if (Nameplates.TryGetValue(id, out var nameplate))
                         {
-                            if (Nameplates.TryGetValue(id, out var nameplate))
+                            if (nameplate != null)
                             {
-                                if (nameplate != null)
-                                {
-                                    nameplate.ApplySettings();
-                                }
-                                else
-                                {
-                                    VRCPlates.Debug("Nameplate is null, removing from dictionary\n" + new StackTrace());
-                                    RemoveNameplate(id);
-                                }
+                                nameplate.ApplySettings();
                             }
                             else
                             {
-                                var plate = Object.Instantiate(AssetManager.Nameplate,
-                                    new(position.x, position.y + offsetValue, position.z),
-                                    new(0, 0, 0, 0), oldNameplate.transform.parent);
-
-                                if (plate != null)
-                                {
-                                    plate.transform.localScale = new(scaleValue, scaleValue, scaleValue);
-                                    plate.name = "OldNameplate";
-                                    nameplate = plate.AddComponent<OldNameplate>();
-                                    AddNameplate(nameplate, playerEntity);
-                                }
-                                else
-                                {
-                                    VRCPlates.Error("Unable to Instantiate Nameplate: Nameplate is Null\n" +
-                                                    new StackTrace());
-                                }
-                            }
-
-                            if (Settings.Enabled.Value)
-                            {
-                                oldNameplate.gameObject.SetActive(false);
-                                if (nameplate != null && !nameplate.IsLocal &&
-                                    nameplate.Nameplate != null)
-                                    nameplate.Nameplate.SetActive(Settings.Enabled.Value);
-                            }
-                            else
-                            {
-                                oldNameplate.gameObject.SetActive(true);
-                                if (nameplate != null && nameplate.Nameplate != null)
-                                    nameplate.Nameplate.SetActive(false);
+                                VRCPlates.Debug("Nameplate is null, removing from dictionary\n" + new StackTrace());
+                                RemoveNameplate(id);
                             }
                         }
                         else
                         {
-                            VRCPlates.Error("Unable to Instantiate Nameplate: Player is Null\n" + new StackTrace());
+                            var plate = Object.Instantiate(AssetManager.Nameplate,
+                                new(position.x, position.y + offsetValue, position.z),
+                                new(0, 0, 0, 0), oldNameplate.transform.parent);
+
+                            if (plate != null)
+                            {
+                                plate.transform.localScale = new(scaleValue, scaleValue, scaleValue);
+                                plate.name = "OldNameplate";
+                                nameplate = plate.AddComponent<OldNameplate>();
+                                AddNameplate(nameplate, playerEntity);
+                            }
+                            else
+                            {
+                                VRCPlates.Error("Unable to Instantiate Nameplate: Nameplate is Null\n" +
+                                                new StackTrace());
+                            }
+                        }
+
+                        if (Settings.Enabled.Value)
+                        {
+                            oldNameplate.gameObject.SetActive(false);
+                            if (nameplate != null && !nameplate.IsLocal &&
+                                nameplate.Nameplate != null)
+                                nameplate.Nameplate.SetActive(Settings.Enabled.Value);
+                        }
+                        else
+                        {
+                            oldNameplate.gameObject.SetActive(true);
+                            if (nameplate != null && nameplate.Nameplate != null)
+                                nameplate.Nameplate.SetActive(false);
                         }
                     }
                     else
                     {
-                        VRCPlates.Error("Unable to Initialize Nameplate: Settings are null\n" + new StackTrace());
+                        VRCPlates.Error("Unable to Instantiate Nameplate: Player is Null\n" + new StackTrace());
                     }
                 }
                 else
                 {
-                    VRCPlates.Error("Unable to Initialize Nameplate: Nameplate Transform is null\n" + new StackTrace());
+                    VRCPlates.Error("Unable to Initialize Nameplate: Settings are null\n" + new StackTrace());
                 }
             }
             else
             {
-                VRCPlates.Error("Unable to Initialize Nameplate: Nameplate Gameobject is null\n" + new StackTrace());
+                VRCPlates.Error("Unable to Initialize Nameplate: Nameplate Transform is null\n" + new StackTrace());
             }
         }
         else
         {
-            //Throws Harmlessly.
-            VRCPlates.DebugError("Unable to Initialize Nameplate: Nameplate is null\n" + new StackTrace());
+            VRCPlates.Error("Unable to Initialize Nameplate: Nameplate Gameobject is null\n" + new StackTrace());
         }
     }
 }

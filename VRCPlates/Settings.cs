@@ -25,13 +25,14 @@ internal static class Settings
         ShowRank = melonPreferencesCategory.CreateEntry("_showRank", true, "Show Rank");
         ShowVoiceBubble = melonPreferencesCategory.CreateEntry("_showVoiceBubble", true, "Show Voice Bubble");
         ShowIcon = melonPreferencesCategory.CreateEntry("_showIcon", true, "Show User Icon");
+        
+        RateLimit = melonPreferencesCategory.CreateEntry("_rateLimit", 1f, "Image Rate Limit");
 
         //RainbowPlates = melonPreferencesCategory.CreateEntry("_rainbowPlates", false, "owo","Hidden Rainbows~", true);
         //RainbowFriends = melonPreferencesCategory.CreateEntry("_rainbowFriends", false, "fren", "Fren only rainbows~", true);
         //RainbowDelay = melonPreferencesCategory.CreateEntry("_rainbowSpeed", .5f, "owodelay", "Delay between rainbow colors", true);
     }
-
-
+    
     public static MelonPreferences_Entry<bool>? Enabled;
     public static MelonPreferences_Entry<bool>? ModernMovement;
 
@@ -50,6 +51,8 @@ internal static class Settings
     public static MelonPreferences_Entry<bool>? ShowRank;
     public static MelonPreferences_Entry<bool>? ShowVoiceBubble;
     public static MelonPreferences_Entry<bool>? ShowIcon;
+
+    public static MelonPreferences_Entry<float>? RateLimit;
 
     //public static MelonPreferences_Entry<bool>? RainbowPlates;
     //public static MelonPreferences_Entry<bool>? RainbowFriends;

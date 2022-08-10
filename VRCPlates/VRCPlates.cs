@@ -41,7 +41,7 @@ public class VRCPlates : MelonMod
     {
         if (NameplateManager?.Nameplates == null) return;
         if (NameplateManager.Nameplates.Count <= 0) return;
-        NameplateManager.Nameplates.Clear();
+        NameplateManager.ClearNameplates();
     }
 
     public override void OnPreferencesSaved()
