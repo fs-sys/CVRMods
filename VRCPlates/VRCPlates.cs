@@ -10,7 +10,7 @@ namespace VRCPlates;
 
 public class VRCPlates : MelonMod
 {
-    private static readonly MelonLogger.Instance Logger = new("ClassicNameplates");
+    private static readonly MelonLogger.Instance Logger = new("VRCPlates");
 
     public static NameplateManager? NameplateManager;
 
