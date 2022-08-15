@@ -228,8 +228,8 @@ public class OldNameplate : MonoBehaviour
         {
             _profilePicture = value;
             if (string.IsNullOrEmpty(_profilePicture)) return;
-            if (_profilePicture is null or "https://files.abidata.io/user_images/00default.png" || _userIcon == null) return;
-            NameplateManager.ImageQueue?.Add(_profilePicture, _userIcon);
+            if (_profilePicture is null || _userIcon == null) return;
+            NameplateManager.AddImageToQueue(_profilePicture, new [] {_userIcon});
         }
     }
 
@@ -243,10 +243,8 @@ public class OldNameplate : MonoBehaviour
 
             if (_plateBackground == null)
                 return;
-            if (_mainBackground != null)
-                NameplateManager.ImageQueue?.Add(_plateBackground, _mainBackground);
-            if (_vipBackground != null)
-                NameplateManager.ImageQueue?.Add(_plateBackground, _vipBackground);
+            if (_mainBackground != null && _vipBackground != null)
+                NameplateManager.AddImageToQueue(_plateBackground, new [] {_mainBackground, _vipBackground});
         }
     }
     
@@ -295,7 +293,7 @@ public class OldNameplate : MonoBehaviour
         var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
         if (descriptor == null) return;
         
-        var player = Utils.GetPlayerEntity(descriptor.ownerId);
+        var player = PlayerUtils.GetPlayerEntity(descriptor.ownerId);
         if (player == null)
         {
             VRCPlates.NameplateManager.RemoveNameplate(descriptor.ownerId);

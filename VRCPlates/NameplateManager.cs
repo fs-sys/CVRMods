@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using VRCPlates.MonoScripts;
+using VRCPlates.Reflection;
 using Object = UnityEngine.Object;
 
 namespace VRCPlates;
@@ -15,14 +16,52 @@ namespace VRCPlates;
 public class NameplateManager
 {
     public readonly Dictionary<string, OldNameplate?> Nameplates;
-    public static Dictionary<string, RawImage>? ImageQueue;
+    private static Dictionary<string, Texture>? _imageCache;
+    private static Dictionary<string, RawImage[]>? _imageQueue;
 
     public NameplateManager()
     {
         Nameplates = new Dictionary<string, OldNameplate?>();
-        ImageQueue = new Dictionary<string, RawImage>();
+        _imageCache = new Dictionary<string, Texture>();
+        _imageQueue = new Dictionary<string, RawImage[]>();
 
         MelonCoroutines.Start(ImageRequestLoop());
+    }
+
+    public static void AddImageToQueue(string id, RawImage[] image)
+    {
+        if (_imageQueue != null && _imageCache != null)
+        {
+            if (id is not "" or "https://files.abidata.io/user_images/00default.png")
+            {
+                if (_imageCache.TryGetValue(id, out var cachedImage))
+                {
+                    foreach (var im in image)
+                    {
+                        im.texture = cachedImage;
+                        im.transform.parent.gameObject.SetActive(true);
+                    }
+                }
+                else
+                {
+                    if (!_imageQueue.ContainsKey(id))
+                    {
+                        _imageQueue.Add(id, image);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var im in image)
+                {
+                    im.transform.parent.gameObject.SetActive(false);
+                }
+            }
+        }
+        else
+        {
+            VRCPlates.Error("Image Queue is Null");
+        }
     }
 
     private static IEnumerator ImageRequestLoop()
@@ -30,10 +69,11 @@ public class NameplateManager
         while (true)
         {
             var rateLimit = Settings.RateLimit == null ? 1f : Settings.RateLimit.Value;
-            if (ImageQueue is {Count: > 0})
+            _imageQueue = (_imageQueue ?? new Dictionary<string, RawImage[]>()).Where(w => w.Key != null).ToDictionary(w => w.Key, w => w.Value);
+            if (_imageQueue is {Count: > 0})
             {
-                var pair = ImageQueue.First();
-                if (pair.Key is not null or "" or "https://files.abidata.io/user_images/00default.png")
+                var pair = _imageQueue.First(w => w.Key != null);
+                if (pair.Key != null)
                 {
                     using var uwr = UnityWebRequest.Get(pair.Key);
                     uwr.downloadHandler = new DownloadHandlerTexture();
@@ -47,21 +87,28 @@ public class NameplateManager
                     if (uwr.isNetworkError || uwr.isHttpError)
                     {
                         VRCPlates.Warning("Unable to set profile picture: " + uwr.error + "\n" + new StackTrace());
-                        ImageQueue.Remove(pair.Key);
+                        _imageQueue.Remove(pair.Key);
                     }
                     else
                     {
-                        pair.Value.texture = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
-                        pair.Value.transform.parent.gameObject.SetActive(true);
+                        foreach (var im in pair.Value)
+                        {
+                            im.texture = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
+                            im.transform.parent.gameObject.SetActive(true);
+                        }
                     }
+                    _imageCache?.Add(pair.Key, ((DownloadHandlerTexture) uwr.downloadHandler).texture);
+                    _imageQueue.Remove(pair.Key);
                     uwr.Dispose();
                 }
                 else
                 {
-                    pair.Value.transform.parent.gameObject.SetActive(false);
+                    VRCPlates.Error("Image Queue Key is Null");
+                    foreach (var im in pair.Value)
+                    {
+                        im.transform.parent.gameObject.SetActive(false);
+                    }
                 }
-
-                if (pair.Key != null) ImageQueue.Remove(pair.Key);
             }
 
             yield return new WaitForSeconds(rateLimit);
@@ -154,7 +201,7 @@ public class NameplateManager
         {
             if (playerDescriptor != null)
             {
-                oldNameplate.Player = Utils.GetPlayerEntity(playerDescriptor.ownerId);
+                oldNameplate.Player = PlayerUtils.GetPlayerEntity(playerDescriptor.ownerId);
 
                 if (oldNameplate.Player != null)
                 {

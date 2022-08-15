@@ -5,7 +5,6 @@ using System.Reflection.Emit;
 using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
-using DarkRift;
 using HarmonyLib;
 using MelonLoader;
 using VRCPlates.Reflection;
@@ -187,7 +186,7 @@ internal static class Patching
         var descriptor = __instance.GetPlayerDescriptor();
         if (descriptor != null)
         {
-            var entity = Utils.GetPlayerEntity(descriptor.ownerId);
+            var entity = PlayerUtils.GetPlayerEntity(descriptor.ownerId);
             if (entity != null)
             {
                 if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(entity));

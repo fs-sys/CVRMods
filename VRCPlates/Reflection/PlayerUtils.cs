@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using ABI_RC.Core.Player;
 using UnityEngine;
 
@@ -17,5 +18,16 @@ public static class PlayerUtils
     public static Animator GetAnimator(this PuppetMaster puppetMaster)
     {
         return (Animator) AnimatorField.GetValue(puppetMaster);
+    }
+    
+    public static CVRPlayerEntity? GetPlayerEntity(string? userID)
+    {
+        var player = CVRPlayerManager.Instance.NetworkPlayers.Find(p=> p.Uuid == userID);
+        if (player != null)
+        {
+            return player;
+        }
+        VRCPlates.Error("Could not find player entity for user ID: " + userID + "\n" + new StackTrace());
+        return null;
     }
 }

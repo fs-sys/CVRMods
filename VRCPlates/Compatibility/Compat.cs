@@ -1,5 +1,4 @@
-﻿using MelonLoader;
-
+﻿
 namespace VRCPlates.Compatibility;
 
 public static class Compat
