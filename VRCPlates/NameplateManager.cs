@@ -91,13 +91,14 @@ public class NameplateManager
                     }
                     else
                     {
+                        var tex = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
+                        _imageCache?.Add(pair.Key, tex);
                         foreach (var im in pair.Value)
                         {
-                            im.texture = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
+                            im.texture = tex;
                             im.transform.parent.gameObject.SetActive(true);
                         }
                     }
-                    _imageCache?.Add(pair.Key, ((DownloadHandlerTexture) uwr.downloadHandler).texture);
                     _imageQueue.Remove(pair.Key);
                     uwr.Dispose();
                 }
