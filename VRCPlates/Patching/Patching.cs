@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
+using ABI_RC.Core.Savior;
 using HarmonyLib;
 using MelonLoader;
 using VRCPlates.Reflection;
@@ -30,6 +31,10 @@ internal static class Patching
             typeof(ViewManager).GetMethod("HandleRelations", BindingFlags.NonPublic | BindingFlags.Instance);
         var _onRelations =
             typeof(Patching).GetMethod(nameof(OnRelations), BindingFlags.NonPublic | BindingFlags.Static);
+        
+        var _SettingsChanged = typeof(MetaPort).GetMethod("SettingsChangedHandler", BindingFlags.NonPublic | BindingFlags.Instance);
+        var _onSettingsChanged =
+            typeof(Patching).GetMethod(nameof(OnSettingsChanged), BindingFlags.NonPublic | BindingFlags.Static);
 
         var _TryCreatePlayer = typeof(CVRPlayerManager).GetMethod(nameof(CVRPlayerManager.TryCreatePlayer),
             BindingFlags.Instance | BindingFlags.Public);
@@ -58,6 +63,15 @@ internal static class Patching
         else
         {
             VRCPlates.Error("Failed to patch HandleRelations\n" + new StackTrace());
+        }
+        
+        if (_SettingsChanged != null && _onSettingsChanged != null)
+        {
+            _instance.Patch(_SettingsChanged, null, new HarmonyMethod(_onSettingsChanged));
+        }
+        else
+        {
+            VRCPlates.Error("Failed to patch SettingsChanged\n" + new StackTrace());
         }
 
         if (_PlayerLeave != null && _onPlayerLeave != null)
@@ -178,6 +192,16 @@ internal static class Patching
             {
                 return;
             }
+        }
+    }
+    
+    private static void OnSettingsChanged(MetaPort __instance)
+    {
+        if (!__instance.settings.settingsHaveChanged) return;
+        if (VRCPlates.NameplateManager == null) return;
+        foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Where(nameplate => nameplate.Value != null))
+        {
+            nameplate.Value!.ApplySettings();
         }
     }
     

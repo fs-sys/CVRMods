@@ -13,7 +13,7 @@ namespace VRCPlates.MonoScripts;
 
 public class OldNameplate : MonoBehaviour
 {
-    public CVRPlayerEntity? Player;
+    public CVRPlayerEntity Player = null!;
     public bool qmOpen;
     
     private bool _isFriend;
@@ -32,34 +32,34 @@ public class OldNameplate : MonoBehaviour
     private string? _plateBackground;
     
     internal GameObject? Nameplate;
-    private Transform? _transform;
-    private Transform? _headTransform;
-    private PositionConstraint? _constraint;
-    private Camera? _camera;
+    private Transform _transform = null!;
+    private Transform _headTransform = null!;
+    private PositionConstraint _constraint = null!;
+    private Camera _camera = null!;
 
-    private Image? _mainPlate;
-    private Text? _mainText;
-    private RawImage? _mainBackground;
+    private Image _mainPlate = null!;
+    private Text _mainText = null!;
+    private RawImage _mainBackground = null!;
 
     // private Image? _afkPlate;
     // private Text? _afkText;
     // private RawImage? _afkBackground;
 
-    private Image? _userPlate;
-    private RawImage? _userIcon;
+    private Image _userPlate = null!;
+    private RawImage _userIcon = null!;
 
-    private Image? _vipPlate;
-    private Text? _vipText;
-    private RawImage? _vipBackground;
+    private Image _vipPlate = null!;
+    private Text _vipText = null!;
+    private RawImage _vipBackground = null!;
 
-    private Image? _voiceBubble;
-    private Text? _voiceVolume;
+    private Image _voiceBubble = null!;
+    private Text _voiceVolume = null!;
 
-    private Image? _badgeHidden;
-    public Image? badgeCompat;
+    private Image _badgeHidden = null!;
+    public Image badgeCompat = null!;
 
-    private Image? _iconFriend;
-    private Text? _rankText;
+    private Image _iconFriend = null!;
+    private Text _rankText = null!;
     
     private bool _isVoiceBubbleNotNull;
     private bool _isNameplateNotNull;
@@ -322,19 +322,19 @@ public class OldNameplate : MonoBehaviour
             {
                 if (Player.TalkerAmplitude > 0f)
                 {
-                    if (_isVoiceBubbleNotNull && !_voiceBubble!.gameObject.activeInHierarchy)
+                    if (_isVoiceBubbleNotNull && !_voiceBubble.gameObject.activeInHierarchy)
                     {
                         if (Settings.ShowVoiceBubble != null)
                         {
                             _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value);
                         }
 
-                        if (_isMainPlateNotNull && _mainPlate!.gameObject.activeInHierarchy)
+                        if (_isMainPlateNotNull && _mainPlate.gameObject.activeInHierarchy)
                         {
                             _mainPlate.sprite = SpriteDict["nameplatetalk"];
                         }
 
-                        if (_isVipPlateNotNull && _vipPlate!.gameObject.activeInHierarchy)
+                        if (_isVipPlateNotNull && _vipPlate.gameObject.activeInHierarchy)
                         {
                             _vipPlate.sprite = SpriteDict["nameplatetalk"];
                         }
@@ -344,14 +344,14 @@ public class OldNameplate : MonoBehaviour
                 {
                     if (_isVoiceBubbleNotNull)
                     {
-                        _voiceBubble!.gameObject.SetActive(IsMuted);
+                        _voiceBubble.gameObject.SetActive(IsMuted);
 
-                        if (_isMainPlateNotNull && _mainPlate!.gameObject.activeInHierarchy)
+                        if (_isMainPlateNotNull && _mainPlate.gameObject.activeInHierarchy)
                         {
                             _mainPlate.sprite = SpriteDict["nameplate"];
                         }
                         
-                        if (_isVipPlateNotNull && _vipPlate!.gameObject.activeInHierarchy)
+                        if (_isVipPlateNotNull && _vipPlate.gameObject.activeInHierarchy)
                         {
                             _vipPlate.sprite = SpriteDict["nameplate"];
                         }
@@ -409,7 +409,7 @@ public class OldNameplate : MonoBehaviour
     
     public void Update()
     {
-        transform.LookAt(2f * transform.position - _camera!.transform.position);
+        transform.LookAt(2f * transform.position - _camera.transform.position);
     }
 
     public void ApplySettings()
@@ -441,10 +441,10 @@ public class OldNameplate : MonoBehaviour
                             _headTransform = puppetMaster.voicePosition!.transform;
                         }
 
-                        var pos = Player?.PuppetMaster.GetNamePlatePosition(Settings.Offset.Value);
-                        if (pos != null && _transform != null)
+                        var pos = Player.PuppetMaster.GetNamePlatePosition(Settings.Offset.Value);
+                        if (_transform != null)
                         {
-                            _transform.position = pos.Value;
+                            _transform.position = pos;
                         }
                     }
 
@@ -452,7 +452,7 @@ public class OldNameplate : MonoBehaviour
                     {
                         if (_constraint == null)
                         {
-                            _constraint = Nameplate!.AddComponent<PositionConstraint>();
+                            _constraint = Nameplate.AddComponent<PositionConstraint>();
                             VRCPlates.Error("[0000] Constraint is null, forcefully adding it.");
                         }
 
@@ -491,6 +491,8 @@ public class OldNameplate : MonoBehaviour
                         }
                     }
 
+                    IsFriend = Friends.FriendsWith(Player.Uuid);
+
                     if (Settings.ShowRank != null)
                         if (_rankText != null && Player != null)
                         {
@@ -498,29 +500,36 @@ public class OldNameplate : MonoBehaviour
                             Rank = Player.ApiUserRank;
                         }
 
-                    if (Settings.ShowIcon != null)
+                    var showPfp = MetaPort.Instance.settings.GetSettingInt("GeneralNameplatesImageVisibility");
+                    if (((showPfp == 1 && IsFriend) || showPfp == 2) && ProfilePicture != "" &&
+                        ProfilePicture != "https://files.abidata.io/user_images/00default.png")
+                    {
                         if (_userPlate != null)
-                            _userPlate.gameObject.SetActive(Settings.ShowIcon.Value && ProfilePicture != "" &&
-                                                            ProfilePicture !=
-                                                            "https://files.abidata.io/user_images/00default.png");
+                            _userPlate.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        if (_userPlate != null)
+                            _userPlate.gameObject.SetActive(false);
+                    }
 
                     if (Settings.ShowVoiceBubble != null)
-                        if (_voiceBubble != null && Player != null)
+                        if (_voiceBubble != null)
                             _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value &&
-                                                              Player.TalkerAmplitude > 0f);
+                                                              Player?.TalkerAmplitude > 0f);
 
                     if (Settings.PlateColor != null && Settings.PlateColorByRank != null &&
                         Settings.BtkColorPlates != null)
                     {
                         if (Settings.BtkColorPlates.Value)
                         {
-                            if (Player != null) PlateColor = Utils.GetColourFromUserID(Player.Uuid);
+                            PlateColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
                         }
                         else
                         {
                             if (Settings.PlateColorByRank.Value)
                             {
-                                if (Player != null) PlateColor = Utils.GetColorForSocialRank(Player.ApiUserRank);
+                                PlateColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
                             }
                             else
                             {
@@ -541,13 +550,13 @@ public class OldNameplate : MonoBehaviour
                     {
                         if (Settings.BtkColorNames.Value)
                         {
-                            if (Player != null) NameColor = Utils.GetColourFromUserID(Player.Uuid);
+                            NameColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
                         }
                         else
                         {
                             if (Settings.NameColorByRank.Value)
                             {
-                                if (Player != null) NameColor = Utils.GetColorForSocialRank(Player.ApiUserRank);
+                                NameColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
                             }
                             else
                             {
@@ -561,6 +570,16 @@ public class OldNameplate : MonoBehaviour
                                 }
                             }
                         }
+                    }
+
+                    if (MetaPort.Instance.settings.GetSettingsBool("GeneralShowNameplates") &&
+                        MetaPort.Instance.worldEnableNameplates)
+                    {
+                        Nameplate.SetActive(true);
+                    }
+                    else
+                    {
+                        Nameplate.SetActive(false);
                     }
                 }
                 else
@@ -577,19 +596,5 @@ public class OldNameplate : MonoBehaviour
         {
             VRCPlates.Error("[0003] Unable to Apply Nameplate Settings:\n" + e);
         }
-    }
-
-    public void OnNameplateModeChanged()
-    {
-        if (Nameplate == null) return;
-        
-        if (!MetaPort.Instance.settings.GetSettingsBool("GeneralShowNameplates") ||
-            !MetaPort.Instance.worldEnableNameplates)
-        {
-            Nameplate.SetActive(false);
-            return;
-        }
-
-        Nameplate.SetActive(true);
     }
 }

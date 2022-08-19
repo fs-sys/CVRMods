@@ -24,7 +24,6 @@ internal static class Settings
 
         ShowRank = melonPreferencesCategory.CreateEntry("_showRank", true, "Show Rank");
         ShowVoiceBubble = melonPreferencesCategory.CreateEntry("_showVoiceBubble", true, "Show Voice Bubble");
-        ShowIcon = melonPreferencesCategory.CreateEntry("_showIcon", true, "Show User Icon");
         
         RateLimit = melonPreferencesCategory.CreateEntry("_rateLimit", 1f, "Image Rate Limit");
 
@@ -50,7 +49,6 @@ internal static class Settings
     
     public static MelonPreferences_Entry<bool>? ShowRank;
     public static MelonPreferences_Entry<bool>? ShowVoiceBubble;
-    public static MelonPreferences_Entry<bool>? ShowIcon;
 
     public static MelonPreferences_Entry<float>? RateLimit;
 
