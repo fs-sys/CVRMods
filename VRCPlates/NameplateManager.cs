@@ -262,6 +262,24 @@ public class NameplateManager
             VRCPlates.Error("Unable to Initialize Nameplate: " + e + "\n" + new StackTrace());
         }
     }
+    
+    public static void OnEnableToggle(Component playerNameplate, OldNameplate? oldNameplate)
+    {
+        if (Settings.Enabled == null) return;
+        if (Settings.Enabled.Value)
+        {
+            playerNameplate.gameObject.SetActive(false);
+            if (oldNameplate != null && !oldNameplate.IsLocal &&
+                oldNameplate.Nameplate != null)
+                oldNameplate.Nameplate.SetActive(Settings.Enabled.Value);
+        }
+        else
+        {
+            playerNameplate.gameObject.SetActive(true);
+            if (oldNameplate != null && oldNameplate.Nameplate != null)
+                oldNameplate.Nameplate.SetActive(false);
+        }
+    }
 
     public IEnumerator CreateNameplate(CVRPlayerEntity playerEntity)
     {
@@ -314,19 +332,7 @@ public class NameplateManager
                             }
                         }
 
-                        if (Settings.Enabled.Value)
-                        {
-                            oldNameplate.gameObject.SetActive(false);
-                            if (nameplate != null && !nameplate.IsLocal &&
-                                nameplate.Nameplate != null)
-                                nameplate.Nameplate.SetActive(Settings.Enabled.Value);
-                        }
-                        else
-                        {
-                            oldNameplate.gameObject.SetActive(true);
-                            if (nameplate != null && nameplate.Nameplate != null)
-                                nameplate.Nameplate.SetActive(false);
-                        }
+                        OnEnableToggle(oldNameplate, nameplate);
                     }
                     else
                     {

@@ -3,7 +3,7 @@ using MelonLoader;
 using UnityEngine;
 using VRCPlates.Compatibility;
 
-[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.6", ".FS.#8519")]
+[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.7", "FS (Autumn)")]
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
 namespace VRCPlates;
 
@@ -13,7 +13,7 @@ public class VRCPlates : MelonMod
 
     public static NameplateManager? NameplateManager;
 
-    public override void OnApplicationStart()
+    public override void OnInitializeMelon()
     {
         AssetManager.Init();
         Settings.Init();
@@ -42,7 +42,7 @@ public class VRCPlates : MelonMod
         if (NameplateManager.Nameplates.Count <= 0) return;
         NameplateManager.ClearNameplates();
     }
-
+    
     public override void OnPreferencesSaved()
     {
         if (NameplateManager?.Nameplates == null) return;

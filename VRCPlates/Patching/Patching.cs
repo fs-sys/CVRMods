@@ -251,7 +251,7 @@ internal static class Patching
         if (VRCPlates.NameplateManager == null) return;
         foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Select(pair => pair.Value).Where(nameplate => nameplate != null))
         {
-            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player?.Uuid);
+            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player.Uuid);
         }
     }
 

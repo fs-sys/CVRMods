@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Savior;
@@ -420,172 +421,25 @@ public class OldNameplate : MonoBehaviour
 
             if (Player != null)
             {
-                if (Player.PlayerDescriptor.TryGetComponent<PuppetMaster>(out var puppetMaster))
-                {
-                    var animator = puppetMaster.GetAnimator();
+                OnScaleUpdate();
 
-                    if (Settings.Scale != null)
-                    {
-                        var scaleValue = Settings.Scale.Value * .001f;
-                        if (_transform != null) _transform.localScale = new Vector3(scaleValue, scaleValue, scaleValue);
-                    }
+                OnOffsetUpdate();
 
-                    if (Settings.Offset != null)
-                    {
-                        if (animator != null && animator.isHuman)
-                        {
-                            _headTransform = animator.GetBoneTransform(HumanBodyBones.Head);
-                        }
-                        else
-                        {
-                            _headTransform = puppetMaster.voicePosition!.transform;
-                        }
+                OnModernMovementToggle();
 
-                        var pos = Player.PuppetMaster.GetNamePlatePosition(Settings.Offset.Value);
-                        if (_transform != null)
-                        {
-                            _transform.position = pos;
-                        }
-                    }
+                OnShowRankToggle();
 
-                    if (Settings.ModernMovement is {Value: true})
-                    {
-                        if (_constraint == null)
-                        {
-                            _constraint = Nameplate.AddComponent<PositionConstraint>();
-                            VRCPlates.Error("[0000] Constraint is null, forcefully adding it.");
-                        }
+                OnShowPfpToggle();
 
-                        if (_constraint.sourceCount > 1)
-                        {
-                            VRCPlates.Error("[0001] Constraint.sourceCount is greater than 1, resetting...");
-                            _constraint.SetSources(null);
-                        }
+                OnVoiceBubbleToggle();
 
-                        if (_constraint.sourceCount == 1)
-                        {
-                            if (_constraint.GetSource(0).sourceTransform == null)
-                            {
-                                VRCPlates.Debug("[0002] Removing Null Constraint Source");
-                                _constraint.RemoveSource(0);
-                            }
-                        }
+                OnPlateColorUpdate();
 
-                        if (_constraint.sourceCount < 1)
-                        {
-                            _constraint.AddSource(new ConstraintSource
-                            {
-                                sourceTransform = _headTransform,
-                                weight = 1
-                            });
-                        }
-                    }
+                OnNameColorUpdate();
 
-                    if (Settings.Offset != null)
-                    {
-                        if (_constraint != null)
-                        {
-                            _constraint.translationOffset = new Vector3(0f, Settings.Offset.Value, 0f);
-                            if (Settings.ModernMovement != null)
-                                _constraint.constraintActive = Settings.ModernMovement.Value;
-                        }
-                    }
+                IsFriend = Friends.FriendsWith(Player.Uuid);
 
-                    IsFriend = Friends.FriendsWith(Player.Uuid);
-
-                    if (Settings.ShowRank != null)
-                        if (_rankText != null && Player != null)
-                        {
-                            // ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
-                            Rank = Player.ApiUserRank;
-                        }
-
-                    var showPfp = MetaPort.Instance.settings.GetSettingInt("GeneralNameplatesImageVisibility");
-                    if (((showPfp == 1 && IsFriend) || showPfp == 2) && ProfilePicture != "" &&
-                        ProfilePicture != "https://files.abidata.io/user_images/00default.png")
-                    {
-                        if (_userPlate != null)
-                            _userPlate.gameObject.SetActive(true);
-                    }
-                    else
-                    {
-                        if (_userPlate != null)
-                            _userPlate.gameObject.SetActive(false);
-                    }
-
-                    if (Settings.ShowVoiceBubble != null)
-                        if (_voiceBubble != null)
-                            _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value &&
-                                                              Player?.TalkerAmplitude > 0f);
-
-                    if (Settings.PlateColor != null && Settings.PlateColorByRank != null &&
-                        Settings.BtkColorPlates != null)
-                    {
-                        if (Settings.BtkColorPlates.Value)
-                        {
-                            PlateColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
-                        }
-                        else
-                        {
-                            if (Settings.PlateColorByRank.Value)
-                            {
-                                PlateColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
-                            }
-                            else
-                            {
-                                if (ColorUtility.TryParseHtmlString(Settings.PlateColor.Value, out var color))
-                                    PlateColor = color;
-                                else
-                                {
-                                    PlateColor = Color.green;
-                                    Settings.PlateColor.Value = "#00FF00";
-                                    VRCPlates.DebugError("Invalid color string for nameplate color.");
-                                }
-                            }
-                        }
-                    }
-
-                    if (Settings.NameColor == null || Settings.NameColorByRank == null ||
-                        Settings.BtkColorNames == null) return;
-                    {
-                        if (Settings.BtkColorNames.Value)
-                        {
-                            NameColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
-                        }
-                        else
-                        {
-                            if (Settings.NameColorByRank.Value)
-                            {
-                                NameColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
-                            }
-                            else
-                            {
-                                if (ColorUtility.TryParseHtmlString(Settings.NameColor.Value, out var color))
-                                    NameColor = color;
-                                else
-                                {
-                                    NameColor = Color.white;
-                                    Settings.NameColor.Value = "#FFFFFF";
-                                    VRCPlates.DebugError("Invalid color string for name color.");
-                                }
-                            }
-                        }
-                    }
-
-                    if (MetaPort.Instance.settings.GetSettingsBool("GeneralShowNameplates") &&
-                        MetaPort.Instance.worldEnableNameplates)
-                    {
-                        Nameplate.SetActive(true);
-                    }
-                    else
-                    {
-                        Nameplate.SetActive(false);
-                    }
-                }
-                else
-                {
-                    VRCPlates.Error("[0005] PuppetMaster is null, cannot apply settings.");
-                }
+                OnVisibilityUpdate();
             }
             else
             {
@@ -595,6 +449,189 @@ public class OldNameplate : MonoBehaviour
         catch (Exception e)
         {
             VRCPlates.Error("[0003] Unable to Apply Nameplate Settings:\n" + e);
+        }
+    }
+
+    public void OnVisibilityUpdate()
+    {
+        var nameplateSetting = MetaPort.Instance.settings.GetSettingInt("GeneralNameplatesVisibility");
+        if (!MetaPort.Instance.worldEnableNameplates || nameplateSetting == 2 ||
+            (nameplateSetting == 1 && !ViewManager.Instance.isGameMenuOpen()))
+        {
+            Nameplate!.SetActive(false);
+        }
+        else
+        {
+            Nameplate!.SetActive(true);
+        }
+
+        Nameplate!.SetActive(Settings.Enabled is {Value: true});
+    }
+
+    public void OnNameColorUpdate()
+    {
+        if (Settings.BtkColorNames is {Value: true})
+        {
+            NameColor = Utils.GetColourFromUserID(Player.Uuid ?? "00000000-0000-0000-0000-000000000000");
+        }
+        else
+        {
+            if (Settings.NameColorByRank is {Value: true})
+            {
+                NameColor = Utils.GetColorForSocialRank(Player.ApiUserRank ?? "User");
+            }
+            else
+            {
+                if (Settings.NameColor != null &&
+                    ColorUtility.TryParseHtmlString(Settings.NameColor.Value, out var color))
+                    NameColor = color;
+                else
+                {
+                    NameColor = Color.white;
+                    if (Settings.NameColor != null) Settings.NameColor.Value = "#FFFFFF";
+                    VRCPlates.DebugError("Invalid color string for name color.");
+                }
+            }
+        }
+    }
+
+    public void OnPlateColorUpdate()
+    {
+        if (Settings.BtkColorPlates is {Value: true})
+        {
+            PlateColor = Utils.GetColourFromUserID(Player.Uuid ?? "00000000-0000-0000-0000-000000000000");
+        }
+        else
+        {
+            if (Settings.PlateColorByRank is {Value: true})
+            {
+                PlateColor = Utils.GetColorForSocialRank(Player.ApiUserRank ?? "User");
+            }
+            else
+            {
+                if (Settings.PlateColor != null && ColorUtility.TryParseHtmlString(Settings.PlateColor.Value, out var color))
+                    PlateColor = color;
+                else
+                {
+                    PlateColor = Color.green;
+                    if (Settings.PlateColor != null) Settings.PlateColor.Value = "#00FF00";
+                    VRCPlates.DebugError("Invalid color string for nameplate color.");
+                }
+            }
+        }
+    }
+
+    public void OnVoiceBubbleToggle()
+    {
+        if (Settings.ShowVoiceBubble == null) return;
+        if (_voiceBubble != null)
+            _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value &&
+                                              Player.TalkerAmplitude > 0f);
+    }
+
+    public void OnShowPfpToggle()
+    {
+        var showPfp = MetaPort.Instance.settings.GetSettingInt("GeneralNameplatesImageVisibility");
+        if ((showPfp == 0 || (showPfp == 1 && IsFriend)) && ProfilePicture != "" &&
+            ProfilePicture != "https://files.abidata.io/user_images/00default.png")
+        {
+            if (_userPlate != null)
+                _userPlate.gameObject.SetActive(true);
+        }
+        else
+        {
+            if (_userPlate != null)
+                _userPlate.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnShowRankToggle()
+    {
+        if (Settings.ShowRank != null)
+            if (_rankText != null && Player != null)
+            {
+                // ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
+                Rank = Player.ApiUserRank;
+            }
+    }
+
+    public void OnOffsetUpdate()
+    {
+        if (Settings.Offset == null) return;
+        
+        if (Player.PlayerDescriptor.TryGetComponent<PuppetMaster>(out var puppetMaster))
+        {
+            var animator = puppetMaster.GetAnimator();
+            
+            if (animator != null && animator.isHuman)
+            {
+                _headTransform = animator.GetBoneTransform(HumanBodyBones.Head);
+            }
+            else
+            {
+                _headTransform = puppetMaster.voicePosition!.transform;
+            }
+
+            var pos = Player.PuppetMaster.GetNamePlatePosition(Settings.Offset.Value);
+            if (_transform != null)
+            {
+                _transform.position = pos;
+            }
+        }
+        else
+        {
+            VRCPlates.Error("PuppetMaster is null, cannot apply offset.");
+        }
+    }
+
+    public void OnScaleUpdate()
+    {
+        if (Settings.Scale != null)
+        {
+            var scaleValue = Settings.Scale.Value * .001f;
+            if (_transform != null) _transform.localScale = new Vector3(scaleValue, scaleValue, scaleValue);
+        }
+    }
+
+    public void OnModernMovementToggle()
+    {
+        if (Settings.ModernMovement is not {Value: true}) return;
+        if (Settings.Offset == null) return;
+        
+        if (_constraint == null)
+        {
+            _constraint = Nameplate!.AddComponent<PositionConstraint>();
+            VRCPlates.Error("[0000] Constraint is null, forcefully adding it.");
+        }
+
+        if (_constraint.sourceCount > 1)
+        {
+            VRCPlates.Error("[0001] Constraint.sourceCount is greater than 1, resetting...");
+            _constraint.SetSources(null);
+        }
+
+        if (_constraint.sourceCount == 1)
+        {
+            if (_constraint.GetSource(0).sourceTransform == null)
+            {
+                VRCPlates.Debug("[0002] Removing Null Constraint Source");
+                _constraint.RemoveSource(0);
+            }
+        }
+
+        if (_constraint.sourceCount < 1)
+        {
+            _constraint.AddSource(new ConstraintSource
+            {
+                sourceTransform = _headTransform,
+                weight = 1
+            });
+        }
+
+        if (_constraint != null)
+        {
+            _constraint.translationOffset = new Vector3(0f, Settings.Offset.Value, 0f);
+            _constraint.constraintActive = Settings.ModernMovement.Value;
         }
     }
 }
