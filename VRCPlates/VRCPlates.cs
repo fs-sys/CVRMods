@@ -3,7 +3,7 @@ using MelonLoader;
 using UnityEngine;
 using VRCPlates.Compatibility;
 
-[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.7", "FS (Autumn)")]
+[assembly: MelonInfo(typeof(VRCPlates.VRCPlates), "VRCPlates", "1.0.8", "FS (Autumn)")]
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
 namespace VRCPlates;
 
