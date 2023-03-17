@@ -7,7 +7,7 @@
         <LangVersion>10</LangVersion>
         <AssemblyName>VRCPlates</AssemblyName>
 
-        <ChilloutPath>X:\SteamLibrary\steamapps\common\ChilloutVR</ChilloutPath>
+        <ChilloutPath>/home/autumn/Games/SteamLibrary/steamapps/common/ChilloutVR</ChilloutPath>
 
     </PropertyGroup>
 

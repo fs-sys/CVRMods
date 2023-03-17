@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using ABI_RC.Core.InteractionSystem;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
+using ABI_RC.Core.Player.AvatarTracking.Remote;
 using ABI_RC.Core.Savior;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -34,7 +35,7 @@ public class OldNameplate : MonoBehaviour
     
     internal GameObject? Nameplate;
     private Transform _transform = null!;
-    private Transform _headTransform = null!;
+    private RemoteHeadPoint _headPoint = null!;
     private PositionConstraint _constraint = null!;
     private Camera _camera = null!;
 
@@ -54,7 +55,6 @@ public class OldNameplate : MonoBehaviour
     private RawImage _vipBackground = null!;
 
     private Image _voiceBubble = null!;
-    private Text _voiceVolume = null!;
 
     private Image _badgeHidden = null!;
     public Image badgeCompat = null!;
@@ -138,8 +138,6 @@ public class OldNameplate : MonoBehaviour
             _badgeHidden.gameObject.SetActive(_isHidden);
         }
     }
-
-    public float UserVolume { get; set; }
 
     public string? VipRank
     {
@@ -280,7 +278,7 @@ public class OldNameplate : MonoBehaviour
         _vipBackground = Nameplate.transform.Find("VIP/Plate/Text").GetComponent<RawImage>();
 
         _voiceBubble = Nameplate.transform.Find("Voice/Bubble").GetComponent<Image>();
-        _voiceVolume = Nameplate.transform.Find("Voice/Volume").GetComponent<Text>();
+        Nameplate.transform.Find("Voice/Volume").GetComponent<Text>();
 
         _badgeHidden = Nameplate.transform.Find("Badges/Hidden").GetComponent<Image>();
         badgeCompat = Nameplate.transform.Find("Badges/Compat").GetComponent<Image>();
@@ -558,25 +556,19 @@ public class OldNameplate : MonoBehaviour
     public void OnOffsetUpdate()
     {
         if (Settings.Offset == null) return;
-        
+
         if (Player.PlayerDescriptor.TryGetComponent<PuppetMaster>(out var puppetMaster))
         {
-            var animator = puppetMaster.GetAnimator();
+            if (_transform == null)
+            {
+                VRCPlates.Error("Transform is null, cannot apply offset");
+                return;
+            }
             
-            if (animator != null && animator.isHuman)
-            {
-                _headTransform = animator.GetBoneTransform(HumanBodyBones.Head);
-            }
-            else
-            {
-                _headTransform = puppetMaster.voicePosition!.transform;
-            }
+            _headPoint = puppetMaster.GetViewPoint();
 
-            var pos = Player.PuppetMaster.GetNamePlatePosition(Settings.Offset.Value);
-            if (_transform != null)
-            {
-                _transform.position = pos;
-            }
+            var headPosition = _headPoint.GetPointPosition();
+            _transform.position.Set(headPosition.x, headPosition.y + Settings.Offset.Value, headPosition.z);
         }
         else
         {
@@ -589,7 +581,10 @@ public class OldNameplate : MonoBehaviour
         if (Settings.Scale != null)
         {
             var scaleValue = Settings.Scale.Value * .001f;
-            if (_transform != null) _transform.localScale = new Vector3(scaleValue, scaleValue, scaleValue);
+            if (_transform != null)
+            {
+                _transform.localScale.Set(scaleValue, scaleValue, scaleValue);
+            }
         }
     }
 
@@ -618,14 +613,21 @@ public class OldNameplate : MonoBehaviour
                 _constraint.RemoveSource(0);
             }
         }
-
+        
         if (_constraint.sourceCount < 1)
         {
-            _constraint.AddSource(new ConstraintSource
+            try
             {
-                sourceTransform = _headTransform,
-                weight = 1
-            });
+                _constraint.AddSource(new ConstraintSource
+                {
+                    sourceTransform = _headPoint.GetTransform(),
+                    weight = 1
+                });
+            }
+            catch
+            {
+                VRCPlates.DebugError("No Headpoint Found for: " + Player.Username);
+            }
         }
 
         if (_constraint != null)

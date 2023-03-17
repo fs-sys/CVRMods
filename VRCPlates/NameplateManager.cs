@@ -109,7 +109,7 @@ public class NameplateManager
         {
             return;
         }
-        
+
         if (id != null && nameplate != null)
             Nameplates.Add(id, nameplate);
     }
