@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
-using Dissonance;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -60,39 +59,33 @@ public class NameplateManager
         {
             var rateLimit = Settings.RateLimit == null ? 1f : Settings.RateLimit.Value;
             _imageQueue = (_imageQueue ?? new Dictionary<string, RawImage[]>()).Where(w => w.Key != null).ToDictionary(w => w.Key, w => w.Value);
-            if (_imageQueue is {Count: > 0})
+            if (_imageQueue is { Count: > 0 })
             {
                 var pair = _imageQueue.First(w => w.Key != null);
                 if (pair.Key != null)
                 {
                     using var uwr = UnityWebRequest.Get(pair.Key);
                     uwr.downloadHandler = new DownloadHandlerTexture();
-
-                    var request = uwr.SendWebRequest();
-                    while (!request.isDone)
-                    {
-                        yield return null;
-                    }
-
-                    if (uwr.isNetworkError || uwr.isHttpError)
+                    yield return uwr.SendWebRequest();
+                    if (uwr.result is UnityWebRequest.Result.ConnectionError or UnityWebRequest.Result.ProtocolError)
                     {
                         VRCPlates.Warning("Unable to set profile picture: " + uwr.error + "\n" + new StackTrace());
                         _imageQueue.Remove(pair.Key);
                     }
                     else
                     {
-                        var tex = ((DownloadHandlerTexture) uwr.downloadHandler).texture;
+                        var tex = DownloadHandlerTexture.GetContent(uwr);
                         _imageCache?.Add(pair.Key, tex);
+
                         foreach (var im in pair.Value)
                         {
-                            im.texture = tex;
+                            yield return (im.texture = tex);
                         }
                     }
                     _imageQueue.Remove(pair.Key);
                     uwr.Dispose();
                 }
             }
-
             yield return new WaitForSeconds(rateLimit);
         }
         // ReSharper disable once IteratorNeverReturns
@@ -136,10 +129,8 @@ public class NameplateManager
         {
             return nameplate;
         }
-        else
-        {
-            MelonCoroutines.Start(CreateNameplate(player));
-        }
+
+        MelonCoroutines.Start(CreateNameplate(player));
 
         VRCPlates.DebugError($"Nameplate does not exist in Dictionary for player: {player.Username}");
         return null;
@@ -151,17 +142,15 @@ public class NameplateManager
         {
             return nameplate;
         }
+
+        var player = PlayerUtils.GetPlayerEntity(id);
+        if (player != null)
+        {
+            MelonCoroutines.Start(CreateNameplate(player));
+        }
         else
         {
-            var player = PlayerUtils.GetPlayerEntity(id);
-            if (player != null)
-            {
-                MelonCoroutines.Start(CreateNameplate(player));
-            }
-            else
-            {
-                VRCPlates.DebugError($"Player does not exist in Dictionary for id: {id}");
-            }
+            VRCPlates.DebugError($"Player does not exist in Dictionary for id: {id}");
         }
         return null;
     }
@@ -212,33 +201,17 @@ public class NameplateManager
 
                         oldNameplate.Name = player.Username;
 
-                        // oldNameplate.Status = player.field_Private_APIUser_0.statusDescriptionDisplayString;
-
                         oldNameplate.Rank = player.ApiUserRank;
 
                         oldNameplate.VipRank = Utils.GetAbbreviation(player.ApiUserRank);
 
-                        // Literally broken no matter what I try.
-                        //oldNameplate.ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
-
                         oldNameplate.IsFriend = Friends.FriendsWith(player.Uuid);
-
-                        // oldNameplate.IsMaster = player.field_Private_VRCPlayerApi_0.isMaster;
-
-                        // VRCPlates.NameplateManager!._masterClient = player.field_Private_APIUser_0.id;
-
-                        //Getting if this value has changed.
-                        //uSpeaker.NativeMethodInfoPtr_Method_Public_Single_1
-                        //Have fun future me, it's your favorite thing, native patching :D
-                        // oldNameplate.UserVolume = player.prop_USpeaker_0.field_Private_Single_1;
 
                         oldNameplate.ProfilePicture = player.ApiProfileImageUrl;
 
-                        // oldNameplate.IsQuest = player.field_Private_APIUser_0._last_platform.ToLower() == "android";
+                        oldNameplate.IsMuted = Utils.IsUserModerated(player.Uuid, ModerationType.Mute);
 
-                        oldNameplate.IsMuted = player.PlayerDescriptor.voiceMuted;
-
-                        oldNameplate.IsLocal = player.DarkRift2Player.Type == NetworkPlayerType.Local;
+                        oldNameplate.IsLocal = 
                     }
                     else
                     {
@@ -351,7 +324,7 @@ public class NameplateManager
         }
         else
         {
-            VRCPlates.Error("Unable to Initialize Nameplate: Nameplate Gameobject is null\n" + new StackTrace());
+            VRCPlates.Error("Unable to Initialize Nameplate: Nameplate GameObject is null\n" + new StackTrace());
         }
     }
 }

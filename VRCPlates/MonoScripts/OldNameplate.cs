@@ -34,6 +34,7 @@ public class OldNameplate : MonoBehaviour
     private string? _plateBackground;
     
     internal GameObject? Nameplate;
+    private VivoxTrackerWrapper? _tracker;
     private Transform _transform = null!;
     private RemoteHeadPoint _headPoint = null!;
     private PositionConstraint _constraint = null!;
@@ -67,6 +68,7 @@ public class OldNameplate : MonoBehaviour
     private bool _isMainPlateNotNull;
     private bool _isVipPlateNotNull;
 
+    private bool Talking => (bool) _tracker!.PipelineIsActiveSmooth;
 
     public bool IsLocal
     {
@@ -287,6 +289,8 @@ public class OldNameplate : MonoBehaviour
         
         _rankText = Nameplate.transform.Find("Rank").GetComponent<Text>();
 
+        
+        
         if (VRCPlates.NameplateManager == null) return;
         
         var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
@@ -305,6 +309,7 @@ public class OldNameplate : MonoBehaviour
         _isVipPlateNotNull = _vipPlate != null;
         _isMainPlateNotNull = _mainPlate != null;
 
+        _tracker = new VivoxTrackerWrapper(player.PuppetMaster.GetVisemeController());
         NameplateManager.InitializePlate(this, descriptor);
                     
         StartCoroutine(SpeechManagement());
@@ -319,7 +324,7 @@ public class OldNameplate : MonoBehaviour
         {
             if (_isNameplateNotNull && Nameplate!.activeInHierarchy && Player != null && SpriteDict != null)
             {
-                if (Player.TalkerAmplitude > 0f)
+                if (Talking)
                 {
                     if (_isVoiceBubbleNotNull && !_voiceBubble.gameObject.activeInHierarchy)
                     {
@@ -417,32 +422,25 @@ public class OldNameplate : MonoBehaviour
         {
             Nameplate ??= gameObject;
 
-            if (Player != null)
-            {
-                OnScaleUpdate();
+            OnScaleUpdate();
 
-                OnOffsetUpdate();
+            OnOffsetUpdate();
 
-                OnModernMovementToggle();
+            OnModernMovementToggle();
 
-                OnShowRankToggle();
+            OnShowRankToggle();
 
-                OnShowPfpToggle();
+            OnShowPfpToggle();
 
-                OnVoiceBubbleToggle();
+            OnVoiceBubbleToggle();
 
-                OnPlateColorUpdate();
+            OnPlateColorUpdate();
 
-                OnNameColorUpdate();
+            OnNameColorUpdate();
 
-                IsFriend = Friends.FriendsWith(Player.Uuid);
+            IsFriend = Friends.FriendsWith(Player.Uuid);
 
-                OnVisibilityUpdate();
-            }
-            else
-            {
-                VRCPlates.Error("[0006] Player is null, cannot apply settings.");
-            }
+            OnVisibilityUpdate();
         }
         catch (Exception e)
         {
@@ -523,8 +521,7 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.ShowVoiceBubble == null) return;
         if (_voiceBubble != null)
-            _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value &&
-                                              Player.TalkerAmplitude > 0f);
+            _voiceBubble.gameObject.SetActive(Settings.ShowVoiceBubble.Value && Talking);
     }
 
     public void OnShowPfpToggle()
@@ -546,7 +543,7 @@ public class OldNameplate : MonoBehaviour
     public void OnShowRankToggle()
     {
         if (Settings.ShowRank != null)
-            if (_rankText != null && Player != null)
+            if (_rankText != null)
             {
                 // ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
                 Rank = Player.ApiUserRank;

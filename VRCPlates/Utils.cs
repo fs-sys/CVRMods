@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using ABI_RC.Core.Savior;
 using UnityEngine;
+using VRCPlates.Reflection;
 using static UnityEngine.Mathf;
 
 namespace VRCPlates;
@@ -43,6 +45,37 @@ public static class Utils
 		"Developer" => "DEV",
 		_ => null
 	};
+
+	public static bool IsUserModerated(string userID, ModerationType moderationType)
+	{
+		var moderationIndex = MetaPort.Instance.SelfModerationManager.GetModerationIndex();
+		if (moderationIndex == null) return false;
+		VRCPlates.Debug($"Scanning Moderation for user: {userID}\nType: {moderationType}");
+
+		foreach (var entry in moderationIndex.selfModerationUsers.Where(entry => entry.userID == userID))
+		{
+			VRCPlates.Debug($"Found Moderation Entry for {userID}");
+			switch (moderationType)
+			{
+				case ModerationType.Mute:
+				{
+					VRCPlates.Debug($"Mute Status: {entry.mute}");
+					return entry.mute;
+				}
+				default:
+				{
+					VRCPlates.Debug($"How did you do this??");
+					return false;
+				}
+			}
+		}
+		return false;
+	}
+}
+
+public enum ModerationType
+{
+	Mute
 }
 
 [Serializable]

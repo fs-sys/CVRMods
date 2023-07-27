@@ -62,7 +62,7 @@ public class VRCPlates : MelonMod
 
     internal static void Debug(object msg) {
         if (MelonDebug.IsEnabled())
-            Logger.Msg(ConsoleColor.Cyan, msg);
+            Logger.Msg(System.ConsoleColor.Cyan, msg);
     }
 
     internal static void Error(object obj) => Logger.Error(obj);

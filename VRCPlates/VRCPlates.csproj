@@ -7,7 +7,7 @@
         <LangVersion>10</LangVersion>
         <AssemblyName>VRCPlates</AssemblyName>
 
-        <ChilloutPath>/home/autumn/Games/SteamLibrary/steamapps/common/ChilloutVR</ChilloutPath>
+        <ChilloutPath>/home/autumn/.mount/Games/SteamLibrary/steamapps/common/ChilloutVR</ChilloutPath>
 
     </PropertyGroup>
 
@@ -21,7 +21,7 @@
 
     <ItemGroup>
       <Reference Include="0Harmony">
-        <HintPath>$(ChilloutPath)\MelonLoader\0Harmony.dll</HintPath>
+        <HintPath>$(ChilloutPath)\MelonLoader\net35\0Harmony.dll</HintPath>
         <Private>False</Private>
       </Reference>
       <Reference Include="Assembly-CSharp">
@@ -35,12 +35,8 @@
       <Reference Include="DarkRift">
         <HintPath>$(ChilloutPath)\ChilloutVR_Data\Managed\DarkRift.dll</HintPath>
       </Reference>
-      <Reference Include="DissonanceVoip">
-        <HintPath>$(ChilloutPath)\ChilloutVR_Data\Managed\DissonanceVoip.dll</HintPath>
-        <Private>False</Private>
-      </Reference>
       <Reference Include="MelonLoader">
-        <HintPath>$(ChilloutPath)\MelonLoader\MelonLoader.dll</HintPath>
+        <HintPath>$(ChilloutPath)\MelonLoader\net35\MelonLoader.dll</HintPath>
         <Private>False</Private>
       </Reference>
       <Reference Include="Unity.TextMeshPro">
