@@ -23,7 +23,8 @@ internal static class Patching
     // Thank you Bono for the the UserJoin Transpiler.
     public static void Init()
     {
-        var _ReloadFriends = typeof(ViewManager).GetMethod("RequestFriendsListTask", BindingFlags.Public | BindingFlags.Instance);
+        var _ReloadFriends =
+            typeof(ViewManager).GetMethod("RequestFriendsListTask", BindingFlags.Public | BindingFlags.Instance);
         var _onReloadFriends =
             typeof(Patching).GetMethod(nameof(OnReloadFriends), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -31,19 +32,14 @@ internal static class Patching
             typeof(ViewManager).GetMethod("HandleRelations", BindingFlags.NonPublic | BindingFlags.Instance);
         var _onRelations =
             typeof(Patching).GetMethod(nameof(OnRelations), BindingFlags.NonPublic | BindingFlags.Static);
-        
-        var _SettingsChanged = typeof(MetaPort).GetMethod("SettingsChangedHandler", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        var _SettingsChanged =
+            typeof(MetaPort).GetMethod("SettingsChangedHandler", BindingFlags.NonPublic | BindingFlags.Instance);
         var _onSettingsChanged =
             typeof(Patching).GetMethod(nameof(OnSettingsChanged), BindingFlags.NonPublic | BindingFlags.Static);
 
-        var _TryCreatePlayer = typeof(CVRPlayerManager).GetMethod(nameof(CVRPlayerManager.TryCreatePlayer),
-            BindingFlags.Instance | BindingFlags.Public);
-        var _onTryCreatePlayer =
-            typeof(Patching).GetMethod(nameof(Transpiler), BindingFlags.NonPublic | BindingFlags.Static);
-
-        var _PlayerLeave = typeof(CVRPlayerEntity).GetMethod("Recycle", BindingFlags.Public | BindingFlags.Instance);
-        var _onPlayerLeave =
-            typeof(Patching).GetMethod(nameof(OnPlayerLeave), BindingFlags.NonPublic | BindingFlags.Static);
+        CVRPlayerManager.Instance.OnPlayerEntityCreated += OnPlayerJoin;
+        CVRPlayerManager.Instance.OnPlayerEntityRecycled += OnPlayerLeave;
 
         var _AvatarInstantiated =
             typeof(PuppetMaster).GetMethod("AvatarInstantiated", BindingFlags.Public | BindingFlags.Instance);
@@ -64,7 +60,7 @@ internal static class Patching
         {
             VRCPlates.Error("Failed to patch HandleRelations\n" + new StackTrace());
         }
-        
+
         if (_SettingsChanged != null && _onSettingsChanged != null)
         {
             _instance.Patch(_SettingsChanged, null, new HarmonyMethod(_onSettingsChanged));
@@ -72,15 +68,6 @@ internal static class Patching
         else
         {
             VRCPlates.Error("Failed to patch SettingsChanged\n" + new StackTrace());
-        }
-
-        if (_PlayerLeave != null && _onPlayerLeave != null)
-        {
-            _instance.Patch(_PlayerLeave, new HarmonyMethod(_onPlayerLeave));
-        }
-        else
-        {
-            VRCPlates.Error("Failed to patch PlayerLeave\n" + new StackTrace());
         }
 
         if (_AvatarInstantiated != null && _onAvatarInstantiated != null)
@@ -109,43 +96,8 @@ internal static class Patching
         {
             VRCPlates.Error("Failed to patch ReloadFriends\n" + new StackTrace());
         }
-
-        if (_targetMethod != null)
-        {
-            if (_TryCreatePlayer != null)
-            {
-                if (_onTryCreatePlayer != null)
-                {
-                    if (_playerEntity != null)
-                    {
-                        if (_onPlayerJoin != null)
-                        {
-                            _instance.Patch(_TryCreatePlayer, transpiler: new HarmonyMethod(_onTryCreatePlayer));
-                        }
-                        else
-                        {
-                            VRCPlates.Error("[5] Failed to patch TryCreatePlayer\n" + new StackTrace());
-                        }
-                    }
-                    else
-                    {
-                        VRCPlates.Error("[4] Failed to patch TryCreatePlayer\n" + new StackTrace());
-                    }
-                }
-                else
-                {
-                    VRCPlates.Error("[3] Failed to patch TryCreatePlayer\n" + new StackTrace());
-                }
-            }
-            else
-                VRCPlates.Error("[2] Failed to patch TryCreatePlayer\n" + new StackTrace());
-        }
-        else
-        {
-            VRCPlates.Error("[1] Failed to patch TryCreatePlayer\n" + new StackTrace());
-        }
     }
-    
+
     private static void OnRelations(ViewManager __instance, string __0, string __1)
     {
         switch (__1)
@@ -226,14 +178,14 @@ internal static class Patching
         }
     }
     
-    private static void OnPlayerJoin(CVRPlayerEntity __instance)
+    private static void OnPlayerJoin(CVRPlayerEntity playerEntity)
     {
-        if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(__instance));
+        if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(playerEntity));
     }
     
-    private static void OnPlayerLeave(CVRPlayerEntity __instance)
+    private static void OnPlayerLeave(CVRPlayerEntity playerEntity)
     {
-        if (VRCPlates.NameplateManager != null) VRCPlates.NameplateManager.RemoveNameplate(__instance.Uuid);
+        if (VRCPlates.NameplateManager != null) VRCPlates.NameplateManager.RemoveNameplate(playerEntity.Uuid);
     }
     
     private static void OnReloadAllNameplates()
@@ -251,21 +203,7 @@ internal static class Patching
         if (VRCPlates.NameplateManager == null) return;
         foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Select(pair => pair.Value).Where(nameplate => nameplate != null))
         {
-            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player.Uuid);
+            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player?.Uuid);
         }
-    }
-
-    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-    {
-        var code = new CodeMatcher(instructions)
-            .MatchForward(true, new CodeMatch(OpCodes.Callvirt, _targetMethod))
-            .Insert(
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Ldfld, _playerEntity),
-                new CodeInstruction(OpCodes.Call, _onPlayerJoin)
-            )
-            .InstructionEnumeration();
-
-        return code;
     }
 }

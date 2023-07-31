@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using ABI_RC.Core.Networking.IO.Social;
 using ABI_RC.Core.Player;
+using ABI_RC.Core.Savior;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -194,7 +195,7 @@ public class NameplateManager
                 if (playerEntity != null)
                 {
                     oldNameplate.Player = playerEntity;
-
+                    
                     if (oldNameplate.Player != null)
                     {
                         var player = oldNameplate.Player;
@@ -211,7 +212,7 @@ public class NameplateManager
 
                         oldNameplate.IsMuted = Utils.IsUserModerated(player.Uuid, ModerationType.Mute);
 
-                        oldNameplate.IsLocal = 
+                        oldNameplate.IsLocal = player.Uuid.Equals(MetaPort.Instance.ownerId);
                     }
                     else
                     {

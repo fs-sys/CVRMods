@@ -15,7 +15,7 @@ namespace VRCPlates.MonoScripts;
 
 public class OldNameplate : MonoBehaviour
 {
-    public CVRPlayerEntity Player = null!;
+    public CVRPlayerEntity? Player = null!;
     public bool qmOpen;
     
     private bool _isFriend;
@@ -34,7 +34,6 @@ public class OldNameplate : MonoBehaviour
     private string? _plateBackground;
     
     internal GameObject? Nameplate;
-    private VivoxTrackerWrapper? _tracker;
     private Transform _transform = null!;
     private RemoteHeadPoint _headPoint = null!;
     private PositionConstraint _constraint = null!;
@@ -68,7 +67,14 @@ public class OldNameplate : MonoBehaviour
     private bool _isMainPlateNotNull;
     private bool _isVipPlateNotNull;
 
-    private bool Talking => (bool) _tracker!.PipelineIsActiveSmooth;
+    private bool Talking
+    {
+        get
+        {
+            var active = (bool?)Player?.PuppetMaster.GetVisemeController().GetIsActiveSmooth();
+            return active ?? false;
+        }
+    }
 
     public bool IsLocal
     {
@@ -308,8 +314,6 @@ public class OldNameplate : MonoBehaviour
         _isVoiceBubbleNotNull = _voiceBubble != null;
         _isVipPlateNotNull = _vipPlate != null;
         _isMainPlateNotNull = _mainPlate != null;
-
-        _tracker = new VivoxTrackerWrapper(player.PuppetMaster.GetVisemeController());
         NameplateManager.InitializePlate(this, descriptor);
                     
         StartCoroutine(SpeechManagement());
@@ -438,7 +442,7 @@ public class OldNameplate : MonoBehaviour
 
             OnNameColorUpdate();
 
-            IsFriend = Friends.FriendsWith(Player.Uuid);
+            IsFriend = Friends.FriendsWith(Player?.Uuid);
 
             OnVisibilityUpdate();
         }
@@ -468,13 +472,13 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.BtkColorNames is {Value: true})
         {
-            NameColor = Utils.GetColourFromUserID(Player.Uuid ?? "00000000-0000-0000-0000-000000000000");
+            NameColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
         }
         else
         {
             if (Settings.NameColorByRank is {Value: true})
             {
-                NameColor = Utils.GetColorForSocialRank(Player.ApiUserRank ?? "User");
+                NameColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
             }
             else
             {
@@ -495,13 +499,13 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.BtkColorPlates is {Value: true})
         {
-            PlateColor = Utils.GetColourFromUserID(Player.Uuid ?? "00000000-0000-0000-0000-000000000000");
+            PlateColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
         }
         else
         {
             if (Settings.PlateColorByRank is {Value: true})
             {
-                PlateColor = Utils.GetColorForSocialRank(Player.ApiUserRank ?? "User");
+                PlateColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
             }
             else
             {
@@ -546,7 +550,7 @@ public class OldNameplate : MonoBehaviour
             if (_rankText != null)
             {
                 // ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
-                Rank = Player.ApiUserRank;
+                Rank = Player?.ApiUserRank;
             }
     }
 
@@ -554,22 +558,30 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.Offset == null) return;
 
-        if (Player.PlayerDescriptor.TryGetComponent<PuppetMaster>(out var puppetMaster))
+        if (Player != null)
         {
-            if (_transform == null)
+            var puppetMaster = Player.PuppetMaster;
+            if (puppetMaster != null)
             {
-                VRCPlates.Error("Transform is null, cannot apply offset");
-                return;
-            }
-            
-            _headPoint = puppetMaster.GetViewPoint();
+                if (_transform == null)
+                {
+                    VRCPlates.Error("Transform is null, cannot apply offset");
+                    return;
+                }
 
-            var headPosition = _headPoint.GetPointPosition();
-            _transform.position.Set(headPosition.x, headPosition.y + Settings.Offset.Value, headPosition.z);
+                _headPoint = puppetMaster.GetViewPoint();
+
+                var headPosition = _headPoint.GetPointPosition();
+                _transform.position.Set(headPosition.x, headPosition.y + Settings.Offset.Value, headPosition.z);
+            }
+            else
+            {
+                VRCPlates.Error("PuppetMaster is null, cannot apply offset");
+            }
         }
         else
         {
-            VRCPlates.Error("PuppetMaster is null, cannot apply offset.");
+            VRCPlates.Error("Player is null, cannot apply offset.");
         }
     }
 
@@ -623,7 +635,7 @@ public class OldNameplate : MonoBehaviour
             }
             catch
             {
-                VRCPlates.DebugError("No Headpoint Found for: " + Player.Username);
+                VRCPlates.DebugError("No Head point Found for: " + Player?.Username);
             }
         }
 
