@@ -56,7 +56,7 @@ public static class PlayerUtils
         return (Animator)AnimatorField.GetValue(puppetMaster);
     }
 
-    private static ConcurrentDictionary<CVRPlayerEntity, bool> GetEntityPool(this ObjectPool<CVRPlayerEntity> objectPool)
+    private static ConcurrentDictionary<CVRPlayerEntity, bool>? GetEntityPool(this ObjectPool<CVRPlayerEntity> objectPool)
     {
         return (ConcurrentDictionary<CVRPlayerEntity, bool>)InUsePoolField.GetValue(objectPool);
     }
@@ -68,20 +68,6 @@ public static class PlayerUtils
         if (rmPoint != null) return rmPoint;
         VRCPlates.Error("Unable to process Viewpoint");
         return null!;
-    }
-
-    public static CVRPlayerEntity? GetPlayerEntity(string? userID)
-    {
-        foreach (var cvrPlayerEntity in CVRPlayerEntity.Pool.GetEntityPool().Keys)
-        {
-            if (cvrPlayerEntity.Uuid == userID)
-            {
-                return cvrPlayerEntity;
-            }
-        }
-
-        VRCPlates.Error("Could not find player entity for user ID: " + userID + "\n" + new StackTrace());
-        return null;
     }
 
     public static object? GetIsActiveSmooth(this CVRVisemeController? visemeController)

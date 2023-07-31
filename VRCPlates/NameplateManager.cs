@@ -42,10 +42,7 @@ public class NameplateManager
             }
             else
             {
-                if (!_imageQueue.ContainsKey(id))
-                {
-                    _imageQueue.Add(id, image);
-                }
+                _imageQueue.TryAdd(id, image);
             }
         }
         else
@@ -91,20 +88,10 @@ public class NameplateManager
         }
         // ReSharper disable once IteratorNeverReturns
     }
-
-    private void AddNameplate(OldNameplate nameplate, CVRPlayerEntity player)
+    
+    private void AddNameplate(OldNameplate nameplate, string id)
     {
-        string id;
-        try
-        {
-            id = player.Uuid;
-        }
-        catch
-        {
-            return;
-        }
-
-        if (id != null && nameplate != null)
+        if (nameplate != null)
             Nameplates.Add(id, nameplate);
     }
 
@@ -124,16 +111,17 @@ public class NameplateManager
         }
     }
 
-    public OldNameplate? GetNameplate(CVRPlayerEntity player)
+    public OldNameplate? GetNameplate(PuppetMaster puppetMaster)
     {
-        if (Nameplates.TryGetValue(player.Uuid, out var nameplate))
+        var descriptor = puppetMaster.GetPlayerDescriptor();
+        if (Nameplates.TryGetValue(descriptor.ownerId, out var nameplate))
         {
             return nameplate;
         }
 
-        MelonCoroutines.Start(CreateNameplate(player));
+        MelonCoroutines.Start(CreateNameplate(puppetMaster));
 
-        VRCPlates.DebugError($"Nameplate does not exist in Dictionary for player: {player.Username}");
+        VRCPlates.DebugError($"Nameplate does not exist in Dictionary for player: {descriptor.userName}");
         return null;
     }
 
@@ -144,10 +132,12 @@ public class NameplateManager
             return nameplate;
         }
 
-        var player = PlayerUtils.GetPlayerEntity(id);
-        if (player != null)
+        if (CVRPlayerManager.Instance.GetPlayerPuppetMaster(id, out var pm))
         {
-            MelonCoroutines.Start(CreateNameplate(player));
+            if (pm != null)
+            {
+                MelonCoroutines.Start(CreateNameplate(pm));
+            }
         }
         else
         {
@@ -191,33 +181,25 @@ public class NameplateManager
         {
             if (playerDescriptor != null)
             {
-                var playerEntity = PlayerUtils.GetPlayerEntity(playerDescriptor.ownerId);
-                if (playerEntity != null)
+                oldNameplate.descriptor = playerDescriptor;
+
+                if (oldNameplate.descriptor != null)
                 {
-                    oldNameplate.Player = playerEntity;
-                    
-                    if (oldNameplate.Player != null)
-                    {
-                        var player = oldNameplate.Player;
+                    var descriptor = oldNameplate.descriptor;
 
-                        oldNameplate.Name = player.Username;
+                    oldNameplate.Name = descriptor.userName;
 
-                        oldNameplate.Rank = player.ApiUserRank;
+                    oldNameplate.Rank = descriptor.userRank;
 
-                        oldNameplate.VipRank = Utils.GetAbbreviation(player.ApiUserRank);
+                    oldNameplate.VipRank = Utils.GetAbbreviation(descriptor.userRank);
 
-                        oldNameplate.IsFriend = Friends.FriendsWith(player.Uuid);
+                    oldNameplate.IsFriend = Friends.FriendsWith(descriptor.ownerId);
 
-                        oldNameplate.ProfilePicture = player.ApiProfileImageUrl;
+                    oldNameplate.ProfilePicture = descriptor.profileImageUrl;
 
-                        oldNameplate.IsMuted = Utils.IsUserModerated(player.Uuid, ModerationType.Mute);
+                    oldNameplate.IsMuted = Utils.IsUserModerated(descriptor.ownerId, ModerationType.Mute);
 
-                        oldNameplate.IsLocal = player.Uuid.Equals(MetaPort.Instance.ownerId);
-                    }
-                    else
-                    {
-                        VRCPlates.NameplateManager?.RemoveNameplate(playerDescriptor.ownerId);
-                    }
+                    oldNameplate.IsLocal = descriptor.ownerId.Equals(MetaPort.Instance.ownerId);
                 }
                 else
                 {
@@ -255,11 +237,11 @@ public class NameplateManager
         }
     }
 
-    public IEnumerator CreateNameplate(CVRPlayerEntity playerEntity)
+    public IEnumerator CreateNameplate(PuppetMaster puppetMaster)
     {
         yield return new WaitForSeconds(0.25f);
 
-        var oldNameplate = playerEntity.PlayerNameplate;
+        var oldNameplate = puppetMaster.GetComponentInChildren<PlayerNameplate>(true);
         if (oldNameplate == null) yield break;
         if (oldNameplate.gameObject != null)
         {
@@ -271,7 +253,7 @@ public class NameplateManager
                 {
                     var scaleValue = Settings.Scale.Value * .001f;
                     var offsetValue = Settings.Offset.Value;
-                    var id = playerEntity.Uuid;
+                    var id = puppetMaster.GetPlayerDescriptor().ownerId;
                     if (id is {Length: > 0})
                     {
                         if (Nameplates.TryGetValue(id, out var nameplate))
@@ -297,7 +279,7 @@ public class NameplateManager
                                 plate.transform.localScale = new(scaleValue, scaleValue, scaleValue);
                                 plate.name = "OldNameplate";
                                 nameplate = plate.AddComponent<OldNameplate>();
-                                AddNameplate(nameplate, playerEntity);
+                                AddNameplate(nameplate, id);
                             }
                             else
                             {

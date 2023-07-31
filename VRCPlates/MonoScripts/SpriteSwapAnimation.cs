@@ -5,6 +5,11 @@ namespace VRCPlates.MonoScripts;
 
 public class SpriteSwapAnimation : MonoBehaviour
 {
+    private void Start()
+    {
+        _isimageNull = image == null;
+    }
+
     private void Awake()
     {
         _currentFrameTime = 0f;
@@ -19,7 +24,7 @@ public class SpriteSwapAnimation : MonoBehaviour
 
     private void Update()
     {
-        if (!gameObject.activeInHierarchy || sprites == null || image == null || !image.enabled || sprites.Length == 0)
+        if (!gameObject.activeInHierarchy || sprites == null || _isimageNull || !image!.enabled || sprites.Length == 0)
         {
             return;
         }
@@ -42,4 +47,5 @@ public class SpriteSwapAnimation : MonoBehaviour
     private int _currentFrame;
     private float _currentFrameTime;
     private float _framePeriod = 1f;
+    private bool _isimageNull;
 }

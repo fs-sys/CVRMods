@@ -14,9 +14,9 @@ internal static class Settings
             if (VRCPlates.NameplateManager == null) return;
             foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Where(nameplate => nameplate.Value != null))
             {
-                if (nameplate.Value!.Player != null && nameplate.Value.Player.PlayerNameplate != null)
+                if (nameplate.Value!.puppetMaster != null && nameplate.Value.oldNameplate != null)
                 {
-                    NameplateManager.OnEnableToggle(nameplate.Value.Player.PlayerNameplate, nameplate.Value);
+                    NameplateManager.OnEnableToggle(nameplate.Value.oldNameplate, nameplate.Value);
                 }
 
                 nameplate.Value.OnVisibilityUpdate();

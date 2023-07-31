@@ -15,7 +15,10 @@ namespace VRCPlates.MonoScripts;
 
 public class OldNameplate : MonoBehaviour
 {
-    public CVRPlayerEntity? Player = null!;
+    public PlayerDescriptor? descriptor;
+    public PuppetMaster? puppetMaster;
+    public PlayerNameplate? oldNameplate;
+    
     public bool qmOpen;
     
     private bool _isFriend;
@@ -71,7 +74,7 @@ public class OldNameplate : MonoBehaviour
     {
         get
         {
-            var active = (bool?)Player?.PuppetMaster.GetVisemeController().GetIsActiveSmooth();
+            var active = (bool?)puppetMaster!.GetVisemeController().GetIsActiveSmooth();
             return active != null && active.Value;
         }
     }
@@ -92,22 +95,24 @@ public class OldNameplate : MonoBehaviour
         set
         {
             _isFriend = value;
-            if (_iconFriend != null) _iconFriend.gameObject.SetActive(_isFriend);
+            var iconFriend = _iconFriend;
+            var rankText = _rankText;
+            if (iconFriend != null) iconFriend.gameObject.SetActive(_isFriend);
             if (_isFriend)
             {
-                if (_rankText == null) return;
-                var text = _rankText.text;
+                if (rankText == null) return;
+                var text = rankText.text;
                 if (text.Contains("Friend")) return;
                 text = $"Friend ({text})";
-                _rankText.text = text;
+                rankText.text = text;
             }
             else
             {
-                if (_rankText == null) return;
-                var text = _rankText.text;
+                if (rankText == null) return;
+                var text = rankText.text;
                 if (!text.StartsWith("Friend (")) return;
                 text = text.Remove(0, 8).Replace(')', ' ').Trim();
-                _rankText.text = text;
+                rankText.text = text;
             }
         }
     }
@@ -292,18 +297,18 @@ public class OldNameplate : MonoBehaviour
         badgeCompat = Nameplate.transform.Find("Badges/Compat").GetComponent<Image>();
 
         _iconFriend = Nameplate.transform.Find("FriendIcon").GetComponent<Image>();
-        
+
         _rankText = Nameplate.transform.Find("Rank").GetComponent<Text>();
 
-        
-        
+
+
         if (VRCPlates.NameplateManager == null) return;
-        
-        var descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
+
+        descriptor = Nameplate.GetComponentInParent<PlayerDescriptor>();
         if (descriptor == null) return;
-        
-        var player = PlayerUtils.GetPlayerEntity(descriptor.ownerId);
-        if (player == null)
+
+        if (!CVRPlayerManager.Instance.GetPlayerPuppetMaster(descriptor.ownerId, out var pm)) return;
+        if (pm == null)
         {
             VRCPlates.NameplateManager.RemoveNameplate(descriptor.ownerId);
             Destroy(Nameplate);
@@ -315,10 +320,10 @@ public class OldNameplate : MonoBehaviour
         _isVipPlateNotNull = _vipPlate != null;
         _isMainPlateNotNull = _mainPlate != null;
         NameplateManager.InitializePlate(this, descriptor);
-                    
+
         StartCoroutine(SpeechManagement());
         StartCoroutine(PlateManagement());
-        
+
         ApplySettings();
     }
 
@@ -326,7 +331,7 @@ public class OldNameplate : MonoBehaviour
     {
         while (true)
         {
-            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && Player != null && SpriteDict != null)
+            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && SpriteDict != null)
             {
                 if (Talking)
                 {
@@ -376,9 +381,9 @@ public class OldNameplate : MonoBehaviour
     {
         while (true)
         {
-            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && Player != null)
-            {
-                IsFriend = Friends.FriendsWith(Player.Uuid);
+            if (_isNameplateNotNull && Nameplate!.activeInHierarchy && descriptor != null)
+            { 
+                IsFriend = Friends.FriendsWith(descriptor.ownerId);
             }
 
             yield return new WaitForSeconds(3f);
@@ -442,7 +447,7 @@ public class OldNameplate : MonoBehaviour
 
             OnNameColorUpdate();
 
-            IsFriend = Friends.FriendsWith(Player?.Uuid);
+            IsFriend = Friends.FriendsWith(descriptor!.ownerId);
 
             OnVisibilityUpdate();
         }
@@ -472,13 +477,13 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.BtkColorNames is {Value: true})
         {
-            NameColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
+            NameColor = Utils.GetColourFromUserID(descriptor!.ownerId ?? "00000000-0000-0000-0000-000000000000");
         }
         else
         {
             if (Settings.NameColorByRank is {Value: true})
             {
-                NameColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
+                NameColor = Utils.GetColorForSocialRank(descriptor!.userRank ?? "User");
             }
             else
             {
@@ -499,13 +504,13 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.BtkColorPlates is {Value: true})
         {
-            PlateColor = Utils.GetColourFromUserID(Player?.Uuid ?? "00000000-0000-0000-0000-000000000000");
+            PlateColor = Utils.GetColourFromUserID(descriptor!.ownerId ?? "00000000-0000-0000-0000-000000000000");
         }
         else
         {
             if (Settings.PlateColorByRank is {Value: true})
             {
-                PlateColor = Utils.GetColorForSocialRank(Player?.ApiUserRank ?? "User");
+                PlateColor = Utils.GetColorForSocialRank(descriptor!.userRank ?? "User");
             }
             else
             {
@@ -550,7 +555,7 @@ public class OldNameplate : MonoBehaviour
             if (_rankText != null)
             {
                 // ShowSocialRank = player.field_Private_APIUser_0.showSocialRank;
-                Rank = Player?.ApiUserRank;
+                Rank = descriptor!.userRank;
             }
     }
 
@@ -558,30 +563,22 @@ public class OldNameplate : MonoBehaviour
     {
         if (Settings.Offset == null) return;
 
-        if (Player != null)
+        if (puppetMaster != null)
         {
-            var puppetMaster = Player.PuppetMaster;
-            if (puppetMaster != null)
+            if (_transform == null)
             {
-                if (_transform == null)
-                {
-                    VRCPlates.Error("Transform is null, cannot apply offset");
-                    return;
-                }
-
-                _headPoint = puppetMaster.GetViewPoint();
-
-                var headPosition = _headPoint.GetPointPosition();
-                _transform.position.Set(headPosition.x, headPosition.y + Settings.Offset.Value, headPosition.z);
+                VRCPlates.Error("Transform is null, cannot apply offset");
+                return;
             }
-            else
-            {
-                VRCPlates.Error("PuppetMaster is null, cannot apply offset");
-            }
+
+            _headPoint = puppetMaster.GetViewPoint();
+
+            var headPosition = _headPoint.GetPointPosition();
+            _transform.position.Set(headPosition.x, headPosition.y + Settings.Offset.Value, headPosition.z);
         }
         else
         {
-            VRCPlates.Error("Player is null, cannot apply offset.");
+            VRCPlates.Error("PuppetMaster is null, cannot apply offset");
         }
     }
 
@@ -635,7 +632,7 @@ public class OldNameplate : MonoBehaviour
             }
             catch
             {
-                VRCPlates.DebugError("No Head point Found for: " + Player?.Username);
+                VRCPlates.DebugError("No Head point Found for: " + descriptor!.userName);
             }
         }
 

@@ -16,11 +16,7 @@ namespace VRCPlates.Patching;
 internal static class Patching
 {
     private static readonly HarmonyLib.Harmony _instance = new HarmonyLib.Harmony("VRCPlates");
-    private static readonly MethodInfo? _targetMethod = typeof(List<CVRPlayerEntity>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
-    private static readonly MethodInfo? _onPlayerJoin = typeof(Patching).GetMethod(nameof(OnPlayerJoin), BindingFlags.Static | BindingFlags.NonPublic);
-    private static readonly FieldInfo _playerEntity = typeof(CVRPlayerManager).GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Instance).Single(t => t.GetField("p") != null).GetField("p");
-
-    // Thank you Bono for the the UserJoin Transpiler.
+    
     public static void Init()
     {
         var _ReloadFriends =
@@ -156,31 +152,24 @@ internal static class Patching
             nameplate.Value!.ApplySettings();
         }
     }
-    
+
     private static void OnAvatarInstantiated(PuppetMaster __instance)
     {
         var descriptor = __instance.GetPlayerDescriptor();
         if (descriptor != null)
         {
-            var entity = PlayerUtils.GetPlayerEntity(descriptor.ownerId);
-            if (entity != null)
-            {
-                if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(entity));
-            }
-            else
-            {
-                VRCPlates.Error("Failed to get player entity for " + descriptor.ownerId);
-            }
+            if (VRCPlates.NameplateManager != null)
+                MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(__instance));
         }
         else
         {
             VRCPlates.Error("Failed to get player descriptor for avatar " + __instance.name);
         }
     }
-    
+
     private static void OnPlayerJoin(CVRPlayerEntity playerEntity)
     {
-        if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(playerEntity));
+        if (VRCPlates.NameplateManager != null) MelonCoroutines.Start(VRCPlates.NameplateManager.CreateNameplate(playerEntity.PuppetMaster));
     }
     
     private static void OnPlayerLeave(CVRPlayerEntity playerEntity)
@@ -203,7 +192,7 @@ internal static class Patching
         if (VRCPlates.NameplateManager == null) return;
         foreach (var nameplate in VRCPlates.NameplateManager.Nameplates.Select(pair => pair.Value).Where(nameplate => nameplate != null))
         {
-            nameplate!.IsFriend = Friends.FriendsWith(nameplate.Player?.Uuid);
+            nameplate!.IsFriend = Friends.FriendsWith(nameplate.descriptor!.userName);
         }
     }
 }
