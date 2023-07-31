@@ -35,6 +35,9 @@
         <HintPath>$(ChilloutPath)\MelonLoader\net35\MelonLoader.dll</HintPath>
         <Private>False</Private>
       </Reference>
+      <Reference Include="NicoKuroKusagi">
+        <HintPath>..\..\..\Mount\Games\SteamLibrary\steamapps\common\ChilloutVR\ChilloutVR_Data\Managed\NicoKuroKusagi.dll</HintPath>
+      </Reference>
       <Reference Include="Unity.TextMeshPro">
         <HintPath>$(ChilloutPath)\ChilloutVR_Data\Managed\Unity.TextMeshPro.dll</HintPath>
         <Private>False</Private>

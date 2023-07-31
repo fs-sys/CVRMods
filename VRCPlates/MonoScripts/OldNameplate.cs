@@ -72,7 +72,7 @@ public class OldNameplate : MonoBehaviour
         get
         {
             var active = (bool?)Player?.PuppetMaster.GetVisemeController().GetIsActiveSmooth();
-            return active ?? false;
+            return active != null && active.Value;
         }
     }
 

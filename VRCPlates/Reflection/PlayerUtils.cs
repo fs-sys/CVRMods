@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Player.AvatarTracking.Remote;
 using ABI_RC.Core.Savior;
+using NicoKuroKusagi.MemoryManagement;
 using UnityEngine;
 
 namespace VRCPlates.Reflection;
@@ -14,6 +16,9 @@ public static class PlayerUtils
 
     private static readonly FieldInfo PlayerDescriptorField =
         typeof(PuppetMaster).GetField("_playerDescriptor", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    private static readonly FieldInfo InUsePoolField =
+        typeof(ObjectPool<CVRPlayerEntity>).GetField("inUse",BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     private static readonly FieldInfo ViewPointField =
         typeof(PuppetMaster).GetField("_viewPoint", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -51,6 +56,11 @@ public static class PlayerUtils
         return (Animator)AnimatorField.GetValue(puppetMaster);
     }
 
+    private static ConcurrentDictionary<CVRPlayerEntity, bool> GetEntityPool(this ObjectPool<CVRPlayerEntity> objectPool)
+    {
+        return (ConcurrentDictionary<CVRPlayerEntity, bool>)InUsePoolField.GetValue(objectPool);
+    }
+
     public static RemoteHeadPoint GetViewPoint(this PuppetMaster puppetMaster)
     {
         var point = ViewPointField.GetValue(puppetMaster);
@@ -62,10 +72,12 @@ public static class PlayerUtils
 
     public static CVRPlayerEntity? GetPlayerEntity(string? userID)
     {
-        var player = CVRPlayerManager.Instance.NetworkPlayers.Find(p => p.Uuid == userID);
-        if (player != null)
+        foreach (var cvrPlayerEntity in CVRPlayerEntity.Pool.GetEntityPool().Keys)
         {
-            return player;
+            if (cvrPlayerEntity.Uuid == userID)
+            {
+                return cvrPlayerEntity;
+            }
         }
 
         VRCPlates.Error("Could not find player entity for user ID: " + userID + "\n" + new StackTrace());
